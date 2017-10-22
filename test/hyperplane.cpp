@@ -1,3 +1,6 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+
+#include "doctest.h"
 #include "svm-wrapper.hpp"
 
 #include <iostream>
@@ -32,7 +35,8 @@ private:
     std::vector<double> coeffs;
 };
 
-int main () {
+
+TEST_CASE("hyperplane") {
     std::mt19937 rng(42);
     std::uniform_real_distribution<double> uniform;
 
@@ -71,4 +75,5 @@ int main () {
     }
     double success_rate = 100. * correct / M;
     std::cout << "success rate: " << success_rate << "%\n";
+    CHECK(success_rate > 98);
 }
