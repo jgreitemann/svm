@@ -4,6 +4,8 @@
 #include "parameters.hpp"
 #include "svm.h"
 
+#include <stdexcept>
+
 
 namespace svm {
 
@@ -18,6 +20,11 @@ namespace svm {
               params(parameters)
         {
             svm_prob = prob.generate();
+            const char * err = svm_check_parameter(&svm_prob, params.svm_params_ptr());
+            if (err) {
+                std::string err_str(err);
+                throw std::runtime_error(err_str);
+            }
             m = svm_train(&svm_prob, params.svm_params_ptr());
         }
 
