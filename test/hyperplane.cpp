@@ -2,6 +2,7 @@
 
 #include "doctest.h"
 #include "svm-wrapper.hpp"
+#include "kernel/linear_precomputed.hpp"
 
 #include <iostream>
 #include <random>
@@ -35,18 +36,14 @@ private:
     std::vector<double> coeffs;
 };
 
-
-TEST_CASE("hyperplane") {
+template <class Kernel>
+void hyperplane_test (size_t N, size_t M, double threshold) {
     std::mt19937 rng(42);
     std::uniform_real_distribution<double> uniform;
 
-    size_t N = 25;
-    size_t M = 10000;
-
     hyperplane_model trail_model(N, rng);
 
-    typedef svm::kernel::linear kernel_t;
-    svm::problem<kernel_t> prob;
+    svm::problem<Kernel> prob;
 
     int ones = 0;
     for (size_t m = 0; m < M; ++m) {
@@ -60,8 +57,8 @@ TEST_CASE("hyperplane") {
     }
     std::cout << "fraction of ones: " << 1. * ones / M << std::endl;
 
-    svm::parameters<kernel_t> params;
-    svm::model<kernel_t> empirical_model(std::move(prob), params);
+    svm::parameters<Kernel> params;
+    svm::model<Kernel> empirical_model(std::move(prob), params);
 
     int correct = 0;
     for (size_t m = 0; m < M; ++m) {
@@ -73,7 +70,15 @@ TEST_CASE("hyperplane") {
         if (y_true * y_pred > 0)
             ++correct;
     }
-    double success_rate = 100. * correct / M;
-    std::cout << "success rate: " << success_rate << "%\n";
-    CHECK(success_rate > 98);
+    double success_rate = 1. * correct / M;
+    std::cout << "success rate: " << 100. * success_rate << "%\n";
+    CHECK(success_rate > threshold);
+}
+
+TEST_CASE("hyperplane-builtin") {
+    hyperplane_test<svm::kernel::linear>(25, 2500, 0.98);
+}
+
+TEST_CASE("hyperplane-precomputed") {
+    hyperplane_test<svm::kernel::linear_precomputed>(25, 2500, 0.98);
 }

@@ -11,7 +11,7 @@ namespace svm {
 
     namespace kernel {
 
-        class linear;
+        struct linear;
 
     }
 

@@ -4,6 +4,7 @@
 #include "svm.h"
 
 #include <vector>
+#include <type_traits>
 
 
 namespace svm {
@@ -30,6 +31,7 @@ namespace svm {
 
         class patch_through_problem : public basic_problem {
         public:
+            static bool const is_precomputed = false;
             patch_through_problem() = default;
             patch_through_problem(patch_through_problem const&) = delete;
             patch_through_problem & operator= (patch_through_problem const&) = delete;
@@ -53,8 +55,14 @@ namespace svm {
         template <class Kernel>
         class precompute_kernel_problem : public basic_problem {
         public:
+            static bool const is_precomputed = true;
             precompute_kernel_problem(precompute_kernel_problem const&) = delete;
             precompute_kernel_problem & operator= (precompute_kernel_problem const&) = delete;
+            precompute_kernel_problem(precompute_kernel_problem &&) = default;
+            precompute_kernel_problem & operator= (precompute_kernel_problem &&) = default;
+
+            template <typename = typename std::enable_if<std::is_default_constructible<Kernel>::value>::type>
+            precompute_kernel_problem () {}
 
             precompute_kernel_problem (const Kernel & k) : kernel(k) {}
 
@@ -73,10 +81,10 @@ namespace svm {
                 p.l = labels.size();
                 return p;
             }
-            dataset kernelize(dataset & di, double index = 0) {
+            dataset kernelize(dataset const& di, double index = 1) {
                 std::vector<double> v;
                 v.push_back(index);
-                for (dataset & dj : orig_data) {
+                for (dataset const& dj : orig_data) {
                     v.push_back(kernel(di, dj));
                 }
                 return dataset(v);

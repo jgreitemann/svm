@@ -6,6 +6,7 @@
 #include "svm.h"
 
 #include <stdexcept>
+#include <type_traits>
 
 
 namespace svm {
@@ -29,8 +30,15 @@ namespace svm {
             m = svm_train(&svm_prob, params.svm_params_ptr());
         }
 
+        template <typename Problem = problem_t, typename = typename std::enable_if<!Problem::is_precomputed>::type>
         double operator() (dataset const& xj) {
             return svm_predict(m, xj.ptr());
+        }
+
+        template <typename Problem = problem_t, typename = typename std::enable_if<Problem::is_precomputed>::type, bool dummy = false>
+        double operator() (dataset const& xj) {
+            dataset kernelized = prob.kernelize(xj);
+            return svm_predict(m, kernelized.ptr());
         }
 
         ~model () noexcept {
