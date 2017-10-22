@@ -23,6 +23,10 @@ namespace svm {
             return data.data();
         }
 
+        struct svm_node const * ptr () const {
+            return data.data();
+        }
+
     private:
         template <typename OutputIterator>
         void nodify (OutputIterator begin, OutputIterator end) {

@@ -57,5 +57,18 @@ int main () {
     std::cout << "fraction of ones: " << 1. * ones / M << std::endl;
 
     svm::parameters<kernel_t> params;
-    svm::model<kernel_t> model(std::move(prob), params);
+    svm::model<kernel_t> empirical_model(std::move(prob), params);
+
+    int correct = 0;
+    for (size_t m = 0; m < M; ++m) {
+        std::vector<double> xs(N);
+        for (double & x : xs)
+            x = uniform(rng);
+        double y_true = trail_model(xs);
+        double y_pred = empirical_model(svm::dataset(xs));
+        if (y_true * y_pred > 0)
+            ++correct;
+    }
+    double success_rate = 100. * correct / M;
+    std::cout << "success rate: " << success_rate << "%\n";
 }

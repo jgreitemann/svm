@@ -1,5 +1,6 @@
 #pragma once
 
+#include "dataset.hpp"
 #include "problem.hpp"
 #include "parameters.hpp"
 #include "svm.h"
@@ -26,6 +27,10 @@ namespace svm {
                 throw std::runtime_error(err_str);
             }
             m = svm_train(&svm_prob, params.svm_params_ptr());
+        }
+
+        double operator() (dataset const& xj) {
+            return svm_predict(m, xj.ptr());
         }
 
         ~model () noexcept {
