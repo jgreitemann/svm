@@ -26,7 +26,6 @@ namespace svm {
         protected:
             std::vector<dataset> orig_data;
             std::vector<double> labels;
-
         };
 
         class patch_through_problem : public basic_problem {

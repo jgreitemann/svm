@@ -11,14 +11,24 @@
 
 namespace svm {
 
+    // forward declaration
     template <class Kernel>
-    class model {
+    class model;
+
+    template <class Kernel>
+    struct introspection_policy {
+        introspection_policy (model<Kernel> const&) {}
+    };
+
+    template <class Kernel>
+    class model : public introspection_policy<Kernel> {
     public:
         typedef problem<Kernel> problem_t;
         typedef parameters<Kernel> parameters_t;
 
         model (problem_t&& problem, parameters_t const& parameters)
-            : prob(std::move(problem)),
+            : introspection_policy<Kernel>(*this),
+              prob(std::move(problem)),
               params(parameters)
         {
             svm_prob = prob.generate();

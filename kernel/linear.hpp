@@ -2,6 +2,7 @@
 
 #include "problem.hpp"
 #include "parameters.hpp"
+#include "model.hpp"
 #include "svm.h"
 
 #include <stdexcept>
@@ -34,5 +35,11 @@ namespace svm {
         }
     };
 
+    template <>
+    struct introspection_policy<kernel::linear> {
+        double C (size_t i) {
+            return 0;
+        }
+    };
 
 }
