@@ -51,6 +51,9 @@ bool svm::operator!= (data_view::const_iterator lhs,
 // ----- data_view -----
 
 
+data_view::data_view ()
+    : begin_ptr(nullptr), start_index(-1) {}
+
 data_view::data_view (struct svm_node const * ptr, int start_index)
     : begin_ptr(ptr), start_index(start_index) {}
 
@@ -59,10 +62,12 @@ data_view::data_view (dataset const& ds) {
 }
 
 data_view::const_iterator data_view::begin () const {
+    if (start_index == -1)
+        return end();
     return const_iterator(begin_ptr);
 }
 data_view::const_iterator data_view::end () const {
-    return const_iterator(NULL, -1);
+    return const_iterator(nullptr, -1);
 }
 
 double data_view::dot (data_view other) const {

@@ -26,6 +26,7 @@ namespace svm {
             int index;
         };
 
+        data_view ();
         data_view (struct svm_node const * ptr, int start_index = 1);
         data_view (dataset const&);
 
