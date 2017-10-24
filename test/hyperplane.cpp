@@ -4,6 +4,7 @@
 #include "svm-wrapper.hpp"
 #include "kernel/linear_precomputed.hpp"
 
+#include <cmath>
 #include <iostream>
 #include <random>
 #include <stdexcept>
@@ -85,7 +86,7 @@ TEST_CASE("hyperplane-precomputed") {
 
 TEST_CASE("hyperplane-coeffs") {
     size_t M = 10000;
-    size_t N = 7;
+    size_t N = 25;
 
     std::mt19937 rng(42);
     std::uniform_real_distribution<double> uniform;
@@ -108,10 +109,19 @@ TEST_CASE("hyperplane-coeffs") {
     std::cout << "fraction of ones: " << 1. * ones / M << std::endl;
 
     svm::parameters<kernel_t> params;
-    svm::model<kernel_t> empirical_model(std::move(prob), params);
+    svm::introspective_model<kernel_t> empirical_model(std::move(prob), params);
 
+    std::vector<double> empirical_C = empirical_model.coefficients();
+    double norm_trail = 0, norm_emp = 0;
+    for (double c : trail_model.coefficients())
+        norm_trail += c * c;
+    for (double c : empirical_C)
+        norm_emp += c * c;
+    for (double & c : empirical_C)
+        c *= sqrt(norm_trail / norm_emp);
     auto it = trail_model.coefficients().begin();
     for (size_t n = 0; n < N; ++n, ++it) {
-        CHECK(*it == doctest::Approx(empirical_model.C(n)).epsilon(0.1));
+        std::cout << *it << '\t' << empirical_C[n] << std::endl;
+        CHECK(*it == doctest::Approx(empirical_C[n]).epsilon(0.1));
     }
 }

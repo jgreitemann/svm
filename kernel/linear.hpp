@@ -6,6 +6,7 @@
 #include "svm.h"
 
 #include <stdexcept>
+#include <utility>
 
 
 namespace svm {
@@ -36,10 +37,31 @@ namespace svm {
     };
 
     template <>
-    struct introspection_policy<kernel::linear> {
-        double C (size_t i) {
-            return 0;
+    struct introspective_model<kernel::linear> : public model<kernel::linear> {
+        template <typename... Args>
+        introspective_model (Args... args)
+            : model<kernel::linear>(std::forward<Args>(args)...)
+        {
+            double yalpha;
+            data_view x;
+            for (auto p : *this) {
+                std::tie(yalpha, x) = std::move(p);
+                auto itC = C.begin();
+                for (double xj : x) {
+                    if (itC == C.end()) {
+                        C.push_back(0);
+                        itC = --C.end();
+                    }
+                    *itC += yalpha * xj;
+                    ++itC;
+                }
+            }
+
         }
+        
+        std::vector<double> const& coefficients() const { return C; }
+    private:
+        std::vector<double> C;
     };
 
 }
