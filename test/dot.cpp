@@ -13,8 +13,8 @@ TEST_CASE("dot") {
     auto d_a = svm::dataset(a);
     auto d_b = svm::dataset(b);
 
-    CHECK(d_a.dot(d_a) == doctest::Approx(137.));
-    CHECK(d_b.dot(d_b) == doctest::Approx(4.));
-    CHECK(d_a.dot(d_b) == doctest::Approx(-6.));
-    CHECK(d_b.dot(d_a) == doctest::Approx(-6.));
+    CHECK(dot(d_a, d_a) == doctest::Approx(137.));
+    CHECK(dot(d_b, d_b) == doctest::Approx(4.));
+    CHECK(dot(d_a, d_b) == doctest::Approx(-6.));
+    CHECK(dot(d_b, d_a) == doctest::Approx(-6.));
 }

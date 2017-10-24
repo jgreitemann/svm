@@ -13,8 +13,8 @@ namespace svm {
     namespace kernel {
 
         struct linear_precomputed {
-            double operator() (dataset const& xi, dataset const& xj) const {
-                return xi.dot(xj);
+            double operator() (data_view xi, data_view xj) const {
+                return dot(xi, xj);
             }
         };
 
