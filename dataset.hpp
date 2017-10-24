@@ -45,17 +45,19 @@ namespace svm {
     class dataset {
     public:
         template <typename OutputIterator>
-        dataset (OutputIterator begin, OutputIterator end, int start_index = 1)
+        dataset (OutputIterator begin, OutputIterator end,
+                 int start_index = 1, bool skip_zeros = true)
             : start_index(start_index)
         {
-            nodify(begin, end);
+            nodify(begin, end, skip_zeros);
         }
 
         template <typename Container>
-        dataset (Container const& c, int start_index = 1)
+        dataset (Container const& c,
+                 int start_index = 1, bool skip_zeros = true)
             : start_index(start_index)
         {
-            nodify(c.begin(), c.end());
+            nodify(c.begin(), c.end(), skip_zeros);
         }
 
         struct svm_node * ptr () {
@@ -72,9 +74,9 @@ namespace svm {
 
     private:
         template <typename OutputIterator>
-        void nodify (OutputIterator begin, OutputIterator end) {
+        void nodify (OutputIterator begin, OutputIterator end, bool skip_zeros) {
             for (int i = start_index; begin != end; ++i, ++begin)
-                if (*begin != 0)
+                if (!skip_zeros || *begin != 0)
                     data.push_back({ .index = i, .value = *begin });
             data.push_back({ .index = -1 });
         }

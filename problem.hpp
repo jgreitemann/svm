@@ -86,7 +86,7 @@ namespace svm {
                 for (dataset const& dj : orig_data) {
                     v.push_back(kernel(di, dj));
                 }
-                return dataset(v, 0);
+                return dataset(v, 0, false);
             }
         private:
             Kernel kernel;
