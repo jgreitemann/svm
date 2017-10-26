@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <random>
+#include <utility>
 #include <vector>
 
 template <class Kernel>
@@ -14,6 +15,7 @@ void hyperplane_test (size_t N, size_t M, double threshold) {
     hyperplane_model trail_model(N, rng);
 
     svm::problem<Kernel> prob;
+    using input_t = typename svm::problem<Kernel>::input_container_type;
 
     int ones = 0;
     for (size_t m = 0; m < M; ++m) {
@@ -23,7 +25,7 @@ void hyperplane_test (size_t N, size_t M, double threshold) {
         double y = trail_model(xs);
         if (y > 0)
             ++ones;
-        prob.add_sample(svm::dataset(xs), y);
+        prob.add_sample(input_t(std::move(xs)), y);
     }
     std::cout << "fraction of ones: " << 1. * ones / M << std::endl;
 
@@ -36,7 +38,7 @@ void hyperplane_test (size_t N, size_t M, double threshold) {
         for (double & x : xs)
             x = uniform(rng);
         double y_true = trail_model(xs);
-        double y_pred = empirical_model(svm::dataset(xs));
+        double y_pred = empirical_model(input_t(std::move(xs)));
         if (y_true * y_pred > 0)
             ++correct;
     }

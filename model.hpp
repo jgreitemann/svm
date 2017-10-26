@@ -17,6 +17,7 @@ namespace svm {
     public:
         typedef problem<Kernel> problem_t;
         typedef parameters<Kernel> parameters_t;
+        typedef typename problem_t::input_container_type input_container_type;
 
         class const_iterator {
         public:
@@ -82,12 +83,12 @@ namespace svm {
         }
 
         template <typename Problem = problem_t, typename = typename std::enable_if<!Problem::is_precomputed>::type>
-        double operator() (dataset const& xj) {
+        double operator() (input_container_type const& xj) {
             return svm_predict(m, xj.ptr());
         }
 
         template <typename Problem = problem_t, typename = typename std::enable_if<Problem::is_precomputed>::type, bool dummy = false>
-        double operator() (dataset const& xj) {
+        double operator() (input_container_type const& xj) {
             dataset kernelized = prob.kernelize(xj);
             return svm_predict(m, kernelized.ptr());
         }

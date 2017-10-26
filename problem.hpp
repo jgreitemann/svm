@@ -11,24 +11,32 @@ namespace svm {
 
     namespace detail {
 
+        template <class Container>
         class basic_problem {
         public:
+            typedef Container input_container_type;
+
             basic_problem() = default;
             basic_problem(basic_problem const&) = delete;
             basic_problem & operator= (basic_problem const&) = delete;
             basic_problem(basic_problem &&) = default;
             basic_problem & operator= (basic_problem &&) = default;
 
-            void add_sample(dataset&& ds, double label) {
+            void add_sample(Container && ds, double label) {
                 orig_data.push_back(std::move(ds));
                 labels.push_back(label);
             }
+
+            void add_sample(Container const& ds, double label) {
+                orig_data.push_back(ds);
+                labels.push_back(label);
+            }
         protected:
-            std::vector<dataset> orig_data;
+            std::vector<Container> orig_data;
             std::vector<double> labels;
         };
 
-        class patch_through_problem : public basic_problem {
+        class patch_through_problem : public basic_problem<dataset> {
         public:
             static bool const is_precomputed = false;
             patch_through_problem() = default;
@@ -51,8 +59,8 @@ namespace svm {
             std::vector<struct svm_node *> ptrs;
         };
 
-        template <class Kernel>
-        class precompute_kernel_problem : public basic_problem {
+        template <class Kernel, class Container>
+        class precompute_kernel_problem : public basic_problem<Container> {
         public:
             static bool const is_precomputed = true;
             precompute_kernel_problem(precompute_kernel_problem const&) = delete;
@@ -69,8 +77,8 @@ namespace svm {
                 kernel_data.clear();
                 ptrs.clear();
                 int i = 1;
-                for (dataset & di : orig_data) {
-                    kernel_data.push_back(kernelize(di, i));
+                for (Container const& xi : orig_data) {
+                    kernel_data.push_back(kernelize(xi, i));
                     ptrs.push_back(kernel_data.back().ptr());
                     ++i;
                 }
@@ -80,15 +88,17 @@ namespace svm {
                 p.l = labels.size();
                 return p;
             }
-            dataset kernelize(dataset const& di, double index = 1) {
+            dataset kernelize(Container const& xi, double index = 1) {
                 std::vector<double> v;
                 v.push_back(index);
-                for (dataset const& dj : orig_data) {
-                    v.push_back(kernel(di, dj));
+                for (Container const& xj : orig_data) {
+                    v.push_back(kernel(xi, xj));
                 }
                 return dataset(v, 0, false);
             }
         private:
+            using basic_problem<Container>::orig_data;
+            using basic_problem<Container>::labels;
             Kernel kernel;
             std::vector<dataset> kernel_data;
             std::vector<struct svm_node *> ptrs;
@@ -97,8 +107,8 @@ namespace svm {
     }
 
     template <class Kernel>
-    class problem : public detail::precompute_kernel_problem<Kernel> {
-        using detail::precompute_kernel_problem<Kernel>::precompute_kernel_problem;
+    class problem : public detail::precompute_kernel_problem<Kernel, typename Kernel::input_container_type> {
+        using detail::precompute_kernel_problem<Kernel, typename Kernel::input_container_type>::precompute_kernel_problem;
     };
 
 }

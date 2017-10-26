@@ -13,6 +13,7 @@ namespace svm {
     namespace kernel {
 
         struct linear_precomputed {
+            typedef dataset input_container_type;
             double operator() (data_view xi, data_view xj) const {
                 return dot(xi, xj);
             }
@@ -20,12 +21,12 @@ namespace svm {
 
     }
 
-    template <>
-    class problem<kernel::linear_precomputed>
-        : public detail::precompute_kernel_problem<kernel::linear_precomputed>
-    {
-        using precompute_kernel_problem<kernel::linear_precomputed>::precompute_kernel_problem;
-    };
+    // template <>
+    // class problem<kernel::linear_precomputed>
+    //     : public detail::precompute_kernel_problem<kernel::linear_precomputed>
+    // {
+    //     using precompute_kernel_problem<kernel::linear_precomputed>::precompute_kernel_problem;
+    // };
 
     template <>
     class parameters<kernel::linear_precomputed> : public detail::basic_parameters {
