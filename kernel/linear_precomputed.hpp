@@ -5,6 +5,7 @@
 #include "parameters.hpp"
 #include "svm.h"
 
+#include <vector>
 #include <stdexcept>
 
 
@@ -13,20 +14,20 @@ namespace svm {
     namespace kernel {
 
         struct linear_precomputed {
-            typedef dataset input_container_type;
-            double operator() (data_view xi, data_view xj) const {
-                return dot(xi, xj);
+            typedef std::vector<double> input_container_type;
+            double operator() (input_container_type const& xi,
+                               input_container_type const& xj) const {
+                auto iti = xi.begin();
+                auto itj = xj.begin();
+                double sum = 0;
+                for (; iti != xi.end() && itj != xj.end(); ++iti, ++itj) {
+                    sum += *iti * *itj;
+                }
+                return sum;
             }
         };
 
     }
-
-    // template <>
-    // class problem<kernel::linear_precomputed>
-    //     : public detail::precompute_kernel_problem<kernel::linear_precomputed>
-    // {
-    //     using precompute_kernel_problem<kernel::linear_precomputed>::precompute_kernel_problem;
-    // };
 
     template <>
     class parameters<kernel::linear_precomputed> : public detail::basic_parameters {
