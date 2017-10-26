@@ -10,6 +10,10 @@ add_executable(hyperplane-precomputed hyperplane_precomputed.cpp ../data_view.cp
 target_link_libraries(hyperplane-precomputed svm)
 add_test(hyperplane-precomputed hyperplane-precomputed)
 
+add_executable(hyperplane-poly hyperplane_poly.cpp ../data_view.cpp)
+target_link_libraries(hyperplane-poly svm)
+add_test(hyperplane-poly hyperplane-poly)
+
 add_executable(hyperplane-coeffs hyperplane_coeffs.cpp ../data_view.cpp)
 target_link_libraries(hyperplane-coeffs svm)
 add_test(hyperplane-coeffs hyperplane-coeffs)
