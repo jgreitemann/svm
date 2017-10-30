@@ -44,12 +44,22 @@ namespace svm {
             double coef () const {
                 return *yalpha;
             }
+
+            template <typename Problem = problem_t, typename = typename std::enable_if<!Problem::is_precomputed>::type>
             data_view support_vec () const {
                 return data_view(*sv);
             }
-            std::pair<double, data_view> operator* () const {
+
+            template <typename Problem = problem_t, typename = typename std::enable_if<Problem::is_precomputed>::type, bool dummy = false>
+            input_container_type const& support_vec () const {
+                data_view permutation_index(*sv, 0);
+                return prob[permutation_index.front()-1];
+            }
+
+            auto operator* () const {
                 return std::make_pair(coef(), support_vec());
             }
+
             friend bool operator== (const_iterator lhs, const_iterator rhs) {
                 return lhs.yalpha == rhs.yalpha && lhs.sv == rhs.sv;
             }
@@ -59,10 +69,11 @@ namespace svm {
 
             friend model;
         private:
-            const_iterator (double * yalpha, struct svm_node ** sv)
-                : yalpha(yalpha), sv(sv) {}
+            const_iterator (double * yalpha, struct svm_node ** sv, problem_t const& prob)
+                : yalpha(yalpha), sv(sv), prob(prob) {}
             double * yalpha;
             struct svm_node ** sv;
+            problem_t const& prob;
         };
 
         model (problem_t&& problem, parameters_t const& parameters)
@@ -94,10 +105,10 @@ namespace svm {
         }
 
         const_iterator begin () const {
-            return const_iterator(m->sv_coef[0], m->SV);
+            return const_iterator(m->sv_coef[0], m->SV, prob);
         }
         const_iterator end () const {
-            return const_iterator(m->sv_coef[0] + m->l, m->SV + m->l);
+            return const_iterator(m->sv_coef[0] + m->l, m->SV + m->l, prob);
         }
 
     private:

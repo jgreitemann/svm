@@ -31,6 +31,10 @@ namespace svm {
                 orig_data.push_back(ds);
                 labels.push_back(label);
             }
+
+            Container const& operator[] (size_t i) const {
+                return orig_data[i];
+            }
         protected:
             std::vector<Container> orig_data;
             std::vector<double> labels;

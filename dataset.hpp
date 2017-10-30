@@ -33,6 +33,10 @@ namespace svm {
         const_iterator begin () const;
         const_iterator end () const;
 
+        double front () const {
+            return *begin();
+        }
+
         double dot (data_view other) const;
     private:
         struct svm_node const * begin_ptr;
