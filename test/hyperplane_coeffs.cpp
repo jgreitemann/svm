@@ -10,17 +10,15 @@
 #include <vector>
 
 
-TEST_CASE("hyperplane-coeffs") {
-    size_t M = 10000;
-    size_t N = 25;
-
+template <class Kernel>
+void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
     std::mt19937 rng(42);
     std::uniform_real_distribution<double> uniform;
 
     hyperplane_model trail_model(N, rng);
 
-    typedef svm::kernel::linear kernel_t;
-    svm::problem<kernel_t> prob;
+    svm::problem<Kernel> prob;
+    using input_t = typename svm::problem<Kernel>::input_container_type;
 
     int ones = 0;
     for (size_t m = 0; m < M; ++m) {
@@ -30,12 +28,12 @@ TEST_CASE("hyperplane-coeffs") {
         double y = trail_model(xs);
         if (y > 0)
             ++ones;
-        prob.add_sample(svm::dataset(xs), y);
+        prob.add_sample(input_t(std::move(xs)), y);
     }
     std::cout << "fraction of ones: " << 1. * ones / M << std::endl;
 
-    svm::parameters<kernel_t> params;
-    svm::introspective_model<kernel_t> empirical_model(std::move(prob), params);
+    svm::parameters<Kernel> params;
+    svm::introspective_model<Kernel> empirical_model(std::move(prob), params);
 
     std::vector<double> empirical_C = empirical_model.coefficients();
     double norm_trail = 0, norm_emp = 0;
@@ -48,6 +46,10 @@ TEST_CASE("hyperplane-coeffs") {
     auto it = trail_model.coefficients().begin();
     for (size_t n = 0; n < N; ++n, ++it) {
         std::cout << *it << '\t' << empirical_C[n] << std::endl;
-        CHECK(*it == doctest::Approx(empirical_C[n]).epsilon(0.1));
+        CHECK(*it == doctest::Approx(empirical_C[n]).epsilon(eps));
     }
+}
+
+TEST_CASE("hyperplane-coeffs") {
+    hyperplane_coeffs_test<svm::kernel::linear>(25, 10000, 0.1);
 }
