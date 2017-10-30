@@ -43,5 +43,29 @@ namespace svm {
         }
     };
 
+    template <>
+    struct introspective_model<kernel::linear_precomputed> : public model<kernel::linear_precomputed> {
+        template <typename... Args>
+        introspective_model (Args... args)
+            : model<kernel::linear_precomputed>(std::forward<Args>(args)...)
+            {
+                for (auto p : *this) {
+                    double yalpha = p.first;
+                    input_container_type const& x = p.second;
+                    if (C.size() < x.size())
+                        C.resize(x.size(), 0);
+                    auto itC = C.begin();
+                    for (double xj : x) {
+                        *itC += yalpha * xj;
+                        ++itC;
+                    }
+                }
+
+            }
+        
+        std::vector<double> const& coefficients() const { return C; }
+    private:
+        std::vector<double> C;
+    };
 
 }

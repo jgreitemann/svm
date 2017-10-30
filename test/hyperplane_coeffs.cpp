@@ -2,6 +2,7 @@
 
 #include "doctest.h"
 #include "svm-wrapper.hpp"
+#include "kernel/linear_precomputed.hpp"
 #include "hyperplane_model.hpp"
 
 #include <cmath>
@@ -50,6 +51,10 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
     }
 }
 
-TEST_CASE("hyperplane-coeffs") {
+TEST_CASE("hyperplane-coeffs-builtin") {
     hyperplane_coeffs_test<svm::kernel::linear>(25, 10000, 0.1);
+}
+
+TEST_CASE("hyperplane-coeffs-precomputed") {
+    hyperplane_coeffs_test<svm::kernel::linear_precomputed>(25, 10000, 0.1);
 }
