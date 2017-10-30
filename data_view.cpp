@@ -64,7 +64,7 @@ data_view::data_view (dataset const& ds) {
 data_view::const_iterator data_view::begin () const {
     if (start_index == -1)
         return end();
-    return const_iterator(begin_ptr);
+    return const_iterator(begin_ptr, start_index);
 }
 data_view::const_iterator data_view::end () const {
     return const_iterator(nullptr, -1);
