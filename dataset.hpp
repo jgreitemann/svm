@@ -2,6 +2,7 @@
 
 #include "svm.h"
 
+#include <iterator>
 #include <vector>
 
 
@@ -14,6 +15,12 @@ namespace svm {
     public:
         class const_iterator {
         public:
+            typedef std::ptrdiff_t difference_type;
+            typedef double value_type;
+            typedef double * pointer;
+            typedef double & reference;
+            typedef std::input_iterator_tag iterator_category;
+
             const_iterator (struct svm_node const * ptr, int index = 1);
             const_iterator & operator++ ();
             const_iterator operator++ (int);
