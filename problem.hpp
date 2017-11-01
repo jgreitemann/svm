@@ -16,7 +16,7 @@ namespace svm {
         public:
             typedef Container input_container_type;
 
-            basic_problem() = default;
+            basic_problem(size_t dim) : dimension(dim) {};
             basic_problem(basic_problem const&) = delete;
             basic_problem & operator= (basic_problem const&) = delete;
             basic_problem(basic_problem &&) = default;
@@ -31,15 +31,21 @@ namespace svm {
                 orig_data.push_back(ds);
                 labels.push_back(label);
             }
+
+            size_t dim () const {
+                return dimension;
+            }
         protected:
             std::vector<Container> orig_data;
             std::vector<double> labels;
+        private:
+            size_t dimension;
         };
 
         class patch_through_problem : public basic_problem<dataset> {
         public:
             static bool const is_precomputed = false;
-            patch_through_problem() = default;
+            patch_through_problem(size_t dim) : basic_problem<dataset>(dim) {};
             patch_through_problem(patch_through_problem const&) = delete;
             patch_through_problem & operator= (patch_through_problem const&) = delete;
             patch_through_problem(patch_through_problem &&) = default;
@@ -69,9 +75,11 @@ namespace svm {
             precompute_kernel_problem & operator= (precompute_kernel_problem &&) = default;
 
             template <typename = typename std::enable_if<std::is_default_constructible<Kernel>::value>::type>
-            precompute_kernel_problem () {}
+            precompute_kernel_problem (size_t dim)
+                : basic_problem<Container>(dim) {}
 
-            precompute_kernel_problem (const Kernel & k) : kernel(k) {}
+            precompute_kernel_problem (const Kernel & k, size_t dim)
+                : basic_problem<Container>(dim), kernel(k) {}
 
             struct svm_problem generate() {
                 kernel_data.clear();

@@ -20,7 +20,7 @@ TEST_CASE("hyperplane-coeffs") {
     hyperplane_model trail_model(N, rng);
 
     typedef svm::kernel::linear kernel_t;
-    svm::problem<kernel_t> prob;
+    svm::problem<kernel_t> prob(N);
 
     int ones = 0;
     for (size_t m = 0; m < M; ++m) {

@@ -100,6 +100,10 @@ namespace svm {
             return const_iterator(m->sv_coef[0] + m->l, m->SV + m->l);
         }
 
+        size_t dim () const {
+            return prob.dim();
+        }
+
     private:
         problem_t prob;
         svm_problem svm_prob;
