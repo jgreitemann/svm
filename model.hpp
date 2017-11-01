@@ -76,10 +76,25 @@ namespace svm {
                 throw std::runtime_error(err_str);
             }
             m = svm_train(&svm_prob, params.svm_params_ptr());
+
+        model (model const&) = delete;
+        model & operator= (model const&) = delete;
+
+        model (model && other)
+            : prob(std::move(other.prob)),
+              svm_prob(other.svm_prob),
+              params(other.params),
+              m(other.m)
+        {
+            other.svm_prob.l = 0;
+            other.svm_prob.x = nullptr;
+            other.svm_prob.y = nullptr;
+            other.m = nullptr;
         }
 
         ~model () noexcept {
-            svm_free_and_destroy_model(&m); // WTF
+            if (m)
+                svm_free_and_destroy_model(&m); // WTF
         }
 
         template <typename Problem = problem_t, typename = typename std::enable_if<!Problem::is_precomputed>::type>
