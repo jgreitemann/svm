@@ -61,6 +61,12 @@ namespace svm {
             nodify(c.begin(), c.end(), skip_zeros);
         }
 
+        dataset (std::initializer_list<double> il)
+            : start_index(1)
+        {
+            nodify(il.begin(), il.end(), true);
+        }
+
         struct svm_node * ptr () {
             return data.data();
         }
