@@ -76,11 +76,11 @@ namespace svm {
             problem_t const& prob;
         };
 
-        model (problem_t&& problem, parameters_t const& parameters)
+        model (problem_t && problem, parameters_t const& parameters)
             : prob(std::move(problem)),
               params_(parameters)
         {
-            svm_prob = prob.generate();
+            struct svm_problem svm_prob = prob.generate();
             const char * err = svm_check_parameter(&svm_prob, params_.svm_params_ptr());
             if (err) {
                 std::string err_str(err);
@@ -94,14 +94,20 @@ namespace svm {
 
         model (model && other)
             : prob(std::move(other.prob)),
-              svm_prob(other.svm_prob),
               params_(other.params_),
               m(other.m)
         {
-            other.svm_prob.l = 0;
-            other.svm_prob.x = nullptr;
-            other.svm_prob.y = nullptr;
             other.m = nullptr;
+        }
+
+        model & operator= (model && other) {
+            prob = std::move(other.prob);
+            params_ = std::move(other.params_);
+            if (m)
+                svm_free_and_destroy_model(&m);
+            m = other.m;
+            other.m = nullptr;
+            return *this;
         }
 
         ~model () noexcept {
@@ -137,7 +143,6 @@ namespace svm {
 
     private:
         problem_t prob;
-        svm_problem svm_prob;
         parameters_t params_;
         struct svm_model * m;
     };
