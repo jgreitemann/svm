@@ -78,19 +78,35 @@ namespace svm {
 
         model (problem_t&& problem, parameters_t const& parameters)
             : prob(std::move(problem)),
-              params(parameters)
+              params_(parameters)
         {
             svm_prob = prob.generate();
-            const char * err = svm_check_parameter(&svm_prob, params.svm_params_ptr());
+            const char * err = svm_check_parameter(&svm_prob, params_.svm_params_ptr());
             if (err) {
                 std::string err_str(err);
                 throw std::runtime_error(err_str);
             }
-            m = svm_train(&svm_prob, params.svm_params_ptr());
+            m = svm_train(&svm_prob, params_.svm_params_ptr());
+        }
+
+        model (model const&) = delete;
+        model & operator= (model const&) = delete;
+
+        model (model && other)
+            : prob(std::move(other.prob)),
+              svm_prob(other.svm_prob),
+              params_(other.params_),
+              m(other.m)
+        {
+            other.svm_prob.l = 0;
+            other.svm_prob.x = nullptr;
+            other.svm_prob.y = nullptr;
+            other.m = nullptr;
         }
 
         ~model () noexcept {
-            svm_free_and_destroy_model(&m); // WTF
+            if (m)
+                svm_free_and_destroy_model(&m); // WTF
         }
 
         template <typename Problem = problem_t, typename = typename std::enable_if<!Problem::is_precomputed>::type>
@@ -111,10 +127,18 @@ namespace svm {
             return const_iterator(m->sv_coef[0] + m->l, m->SV + m->l, prob);
         }
 
+        size_t dim () const {
+            return prob.dim();
+        }
+
+        parameters_t const& params () const {
+            return params_;
+        }
+
     private:
         problem_t prob;
         svm_problem svm_prob;
-        parameters_t params;
+        parameters_t params_;
         struct svm_model * m;
     };
 

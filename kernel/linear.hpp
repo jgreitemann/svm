@@ -40,7 +40,7 @@ namespace svm {
     struct introspective_model<kernel::linear> : public model<kernel::linear> {
         template <typename... Args>
         introspective_model (Args... args)
-            : model<kernel::linear>(std::forward<Args>(args)...)
+            : model<kernel::linear>(std::forward<Args>(args)...), C(dim(), 0.)
         {
             double yalpha;
             data_view x;
@@ -48,10 +48,6 @@ namespace svm {
                 std::tie(yalpha, x) = std::move(p);
                 auto itC = C.begin();
                 for (double xj : x) {
-                    if (itC == C.end()) {
-                        C.push_back(0);
-                        itC = --C.end();
-                    }
                     *itC += yalpha * xj;
                     ++itC;
                 }

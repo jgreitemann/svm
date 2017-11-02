@@ -14,7 +14,7 @@ void hyperplane_test (size_t N, size_t M, double threshold) {
 
     hyperplane_model trail_model(N, rng);
 
-    svm::problem<Kernel> prob;
+    svm::problem<Kernel> prob(N);
     using input_t = typename svm::problem<Kernel>::input_container_type;
 
     int ones = 0;
