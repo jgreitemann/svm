@@ -12,6 +12,9 @@
 
 namespace svm {
 
+    template <typename Tag, typename Model>
+    struct serializer;
+
     template <class Kernel>
     class model {
     public:
@@ -75,6 +78,8 @@ namespace svm {
             struct svm_node ** sv;
             problem_t const& prob;
         };
+
+        model () : prob(0), m(nullptr) {}
 
         model (problem_t && problem, parameters_t const& parameters)
             : prob(std::move(problem)),
@@ -140,6 +145,9 @@ namespace svm {
         parameters_t const& params () const {
             return params_;
         }
+
+        template <typename Tag, typename Model>
+        friend struct serializer;
 
     private:
         problem_t prob;

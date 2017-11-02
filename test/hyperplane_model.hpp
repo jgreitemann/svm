@@ -7,6 +7,8 @@
 
 class hyperplane_model {
 public:
+    typedef std::vector<double> input_container_type;
+
     template <class RNG>
     hyperplane_model (size_t N, RNG & rng) : coeffs(N) {
         std::uniform_int_distribution<int> dice(-6, 6);
