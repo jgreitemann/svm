@@ -3,8 +3,9 @@
 #include "dataset.hpp"
 #include "svm.h"
 
-#include <vector>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 
 namespace svm {
@@ -32,8 +33,12 @@ namespace svm {
                 labels.push_back(label);
             }
 
-            Container const& operator[] (size_t i) const {
-                return orig_data[i];
+            std::pair<Container const&, double> operator[] (size_t i) const {
+                return std::pair<Container const&, double>(orig_data[i], labels[i]);
+            }
+
+            size_t size () const {
+                return orig_data.size();
             }
 
             size_t dim () const {

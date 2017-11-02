@@ -53,7 +53,7 @@ namespace svm {
             template <typename Problem = problem_t, typename = typename std::enable_if<Problem::is_precomputed>::type, bool dummy = false>
             input_container_type const& support_vec () const {
                 data_view permutation_index(*sv, 0);
-                return prob[permutation_index.front()-1];
+                return prob[permutation_index.front()-1].first;
             }
 
             auto operator* () const {
