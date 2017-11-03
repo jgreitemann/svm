@@ -137,6 +137,10 @@ namespace svm {
             return const_iterator(m->sv_coef[0] + m->l, m->SV + m->l, prob);
         }
 
+        double rho () const {
+            return m->rho[0];
+        }
+
         size_t dim () const {
             return prob.dim();
         }

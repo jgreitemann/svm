@@ -15,7 +15,6 @@
 template <class Kernel>
 void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
     std::mt19937 rng(42);
-    std::uniform_real_distribution<double> uniform;
 
     hyperplane_model trial_model(N, rng);
 
@@ -23,6 +22,7 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
     svm::introspective_model<Kernel> empirical_model(
         fill_problem<svm::problem<Kernel>>(N, M, rng, trial_model),
         params);
+    using input_t = typename svm::introspective_model<Kernel>::input_container_type;
 
     std::vector<double> empirical_C = empirical_model.coefficients();
     double norm_trial = 0, norm_emp = 0;
@@ -30,11 +30,31 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
         norm_trial += c * c;
     for (double c : empirical_C)
         norm_emp += c * c;
+
+    // compare decision function values from model with those
+    // manually calculated from the inferred hyperplane coeffs
+    std::uniform_real_distribution<double> uniform;
+    double d_pred, d_calc;
+    for (size_t m = 0; m < 25; ++m) {
+        std::vector<double> xs(N);
+        for (double & x : xs)
+            x = uniform(rng);
+        d_calc = 0;
+        auto itC = empirical_C.begin();
+        for (double x : xs) {
+            d_calc += *itC * x;
+            ++itC;
+        }
+        d_calc -= empirical_model.rho();
+        std::tie(std::ignore, d_pred) = empirical_model(input_t(std::move(xs)));
+        CHECK(d_calc == doctest::Approx(d_pred));
+    }
+
+    // compare empirical coeffs with input trial coeffs
     for (double & c : empirical_C)
         c *= sqrt(norm_trial / norm_emp);
     auto it = trial_model.coefficients().begin();
     for (size_t n = 0; n < N; ++n, ++it) {
-        std::cout << *it << '\t' << empirical_C[n] << std::endl;
         CHECK(*it == doctest::Approx(empirical_C[n]).epsilon(eps));
     }
 }
