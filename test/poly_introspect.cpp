@@ -15,28 +15,33 @@ using problem_t = svm::problem<kernel_t>;
 using param_t = svm::parameters<kernel_t>;
 using array_t = std::array<double, 4>;
 
-static const array_t ya = { 0.05565581,
-                           -0.05565581,
-                            0.01383064,
-                           -0.01383064};
-static const array_t ys = {+1, -1, +1, -1};
+static const array_t ys = {+1, +1, -1, -1};
 static const std::array<array_t,4> xs {
     array_t {  1,  2,  3,  4 },
-    array_t {  4,  3,  2,  1 },
     array_t { -8, -6, -4, -2 },
+    array_t {  4,  3,  2,  1 },
     array_t { -2, -4, -6, -8 }
 };
 
-model_t setup () {
+static const model_t model = [] {
     problem_t prob(4);
     auto itX = xs.begin();
     auto itY = ys.begin();
     for (; itX != xs.end(); ++itX, ++itY)
         prob.add_sample(svm::dataset(*itX), *itY);
     return model_t(std::move(prob), param_t(1., 0.5));
-}
+} ();
 
-static const model_t model = setup();
+static const array_t ya = [] {
+    array_t ya;
+    auto it = ya.begin();
+    for (auto p : model) {
+        std::tie(*(it), std::ignore) = p;
+        std::cout << *it << std::endl;
+        ++it;
+    }
+    return ya;
+} ();
 
 TEST_CASE("polynomial-introspect-scalar") {
     CHECK(model.tensor<0>() == doctest::Approx(0.25));
