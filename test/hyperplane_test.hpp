@@ -16,11 +16,12 @@ Problem fill_problem (size_t N, size_t M, RNG & rng,
     using input_t = typename Problem::input_container_type;
 
     int ones = 0;
+    double y;
     for (size_t m = 0; m < M; ++m) {
         std::vector<double> xs(N);
         for (double & x : xs)
             x = uniform(rng);
-        double y = trial_model(xs);
+        std::tie(y, std::ignore) = trial_model(xs);
         if (y > 0)
             ++ones;
         prob.add_sample(input_t(std::move(xs)), y);
@@ -38,12 +39,13 @@ double test_model (size_t N, size_t M, RNG & rng,
     using input_t = typename Model::input_container_type;
 
     int correct = 0;
+    double y_pred, y_true;
     for (size_t m = 0; m < M; ++m) {
         std::vector<double> xs(N);
         for (double & x : xs)
             x = uniform(rng);
-        double y_true = trial_model(xs);
-        double y_pred = empirical_model(input_t(std::move(xs)));
+        std::tie(y_true, std::ignore) = trial_model(xs);
+        std::tie(y_pred, std::ignore) = empirical_model(input_t(std::move(xs)));
         if (y_true * y_pred > 0)
             ++correct;
     }

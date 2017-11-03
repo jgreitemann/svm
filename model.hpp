@@ -116,14 +116,18 @@ namespace svm {
         }
 
         template <typename Problem = problem_t, typename = typename std::enable_if<!Problem::is_precomputed>::type>
-        double operator() (input_container_type const& xj) {
-            return svm_predict(m, xj.ptr());
+        std::pair<double, double> operator() (input_container_type const& xj) {
+            double dec;
+            double label =  svm_predict_values(m, xj.ptr(), &dec);
+            return std::make_pair(label, dec);
         }
 
         template <typename Problem = problem_t, typename = typename std::enable_if<Problem::is_precomputed>::type, bool dummy = false>
-        double operator() (input_container_type const& xj) {
+        std::pair<double, double> operator() (input_container_type const& xj) {
             dataset kernelized = prob.kernelize(xj);
-            return svm_predict(m, kernelized.ptr());
+            double dec;
+            double label = svm_predict_values(m, kernelized.ptr(), &dec);
+            return std::make_pair(label, dec);
         }
 
         const_iterator begin () const {
