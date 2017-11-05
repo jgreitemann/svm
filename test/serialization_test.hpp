@@ -1,10 +1,9 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#pragma once
 
 #include "doctest.h"
 #include "svm-wrapper.hpp"
 #include "hyperplane_model.hpp"
 #include "hyperplane_test.hpp"
-#include "kernel/linear_precomputed.hpp"
 
 #include <iostream>
 #include <random>
@@ -35,12 +34,4 @@ void serializer_test (size_t N, size_t M, double threshold, std::string const& n
 
     success_rate = test_model(N, M, rng, empirical_model, restored_model);
     CHECK(success_rate == doctest::Approx(1.));
-}
-
-TEST_CASE("serializer-ascii-builtin") {
-    serializer_test<svm::kernel::linear, svm::ascii_tag>(25, 2500, 0.98, "ascii-builtin");
-}
-
-TEST_CASE("serializer-ascii-precomputed") {
-    serializer_test<svm::kernel::linear_precomputed, svm::ascii_tag>(25, 2500, 0.98, "ascii-precomputed");
 }
