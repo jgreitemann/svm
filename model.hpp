@@ -155,9 +155,4 @@ namespace svm {
         struct svm_model * m;
     };
 
-    template <class Kernel>
-    struct introspective_model : public model<Kernel> {
-        using model<Kernel>::model;
-    };
-
 }

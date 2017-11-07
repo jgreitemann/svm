@@ -19,12 +19,15 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
     hyperplane_model trial_model(N, rng);
 
     svm::parameters<Kernel> params;
-    svm::introspective_model<Kernel> empirical_model(
+    svm::model<Kernel> empirical_model(
         fill_problem<svm::problem<Kernel>>(N, M, rng, trial_model),
         params);
-    using input_t = typename svm::introspective_model<Kernel>::input_container_type;
+    using input_t = typename svm::model<Kernel>::input_container_type;
+    svm::linear_introspector<Kernel> introspector(empirical_model);
 
-    std::vector<double> empirical_C = empirical_model.coefficients();
+    std::vector<double> empirical_C(N);
+    for (size_t i = 0; i < N; ++i)
+        empirical_C[i] = introspector.coefficient(i);
     double norm_trial = 0, norm_emp = 0;
     for (double c : trial_model.coefficients())
         norm_trial += c * c;

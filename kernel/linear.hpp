@@ -5,6 +5,7 @@
 #include "model.hpp"
 #include "svm.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 
@@ -36,28 +37,26 @@ namespace svm {
         }
     };
 
-    template <>
-    struct introspective_model<kernel::linear> : public model<kernel::linear> {
-        template <typename... Args>
-        introspective_model (Args... args)
-            : model<kernel::linear>(std::forward<Args>(args)...), C(dim(), 0.)
-        {
-            double yalpha;
-            data_view x;
-            for (auto p : *this) {
-                std::tie(yalpha, x) = std::move(p);
-                auto itC = C.begin();
-                for (double xj : x) {
-                    *itC += yalpha * xj;
-                    ++itC;
-                }
-            }
+    template <class Kernel>
+    struct linear_introspector {
+        using model_t = model<Kernel>;
 
-        }
+        linear_introspector(model_t const& model) : model_(model) {}
         
-        std::vector<double> const& coefficients() const { return C; }
+        double coefficient(size_t i) const {
+            double c = 0;
+            for (auto p : model_) {
+                double yalpha = p.first;
+                auto const& x = p.second;
+                auto itX = x.begin();
+                std::advance(itX, i);
+                c += yalpha * *itX;
+            }
+            return c;
+        }
+
     private:
-        std::vector<double> C;
+        model_t const& model_;
     };
 
 }

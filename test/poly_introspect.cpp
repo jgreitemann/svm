@@ -6,11 +6,9 @@
 #include <array>
 #include <iostream>
 
-#include <boost/multi_array.hpp>
-
 
 using kernel_t = svm::kernel::polynomial<2>;
-using model_t = svm::introspective_model<kernel_t>;
+using model_t = svm::model<kernel_t>;
 using problem_t = svm::problem<kernel_t>;
 using param_t = svm::parameters<kernel_t>;
 using array_t = std::array<double, 4>;
@@ -44,11 +42,12 @@ static const array_t ya = [] {
 } ();
 
 TEST_CASE("polynomial-introspect-scalar") {
-    CHECK(model.tensor<0>() == doctest::Approx(0.25));
+    svm::tensor_introspector<kernel_t, 0> introspector(model);
+    CHECK(introspector.tensor() == doctest::Approx(0.25));
 }
 
 TEST_CASE("polynomial-introspect-vector") {
-    boost::multi_array<double, 1> const& v = model.tensor<1>();
+    svm::tensor_introspector<kernel_t, 1> introspector(model);
     array_t u = {0, 0, 0, 0};
     auto itX = xs.begin();
     auto itYA = ya.begin();
@@ -58,15 +57,18 @@ TEST_CASE("polynomial-introspect-vector") {
         for (; itXX != itX->end(); ++itXX, ++itU)
             *itU += *itYA * *itXX;
     }
-    auto itU = u.begin();
-    auto itV = v.begin();
-    for (; itU != u.end(); ++itU, ++itV)
-        CHECK(*itU == doctest::Approx(*itV));
+    for (size_t i = 0; i < 4; ++i)
+        CHECK(u[i] == doctest::Approx(introspector.tensor({i})));
 }
 
 TEST_CASE("polynomial-introspect-matrix") {
-    boost::multi_array<double, 2> const& m = model.tensor<2>();
-    boost::multi_array<double, 2> u(boost::extents[4][4]);
+    svm::tensor_introspector<kernel_t, 2> introspector(model);
+    std::array<array_t, 4> u {
+        array_t {0, 0, 0, 0},
+        array_t {0, 0, 0, 0},
+        array_t {0, 0, 0, 0},
+        array_t {0, 0, 0, 0}
+    };
     auto itX = xs.begin();
     auto itYA = ya.begin();
     for (; itX != xs.end(); ++itX, ++itYA) {
@@ -78,5 +80,5 @@ TEST_CASE("polynomial-introspect-matrix") {
     }
     for (size_t i = 0; i < 4; ++i)
         for (size_t j = 0; j < 4; ++j)
-            CHECK(u[i][j] == doctest::Approx(m[i][j]));
+            CHECK(u[i][j] == doctest::Approx(introspector.tensor({i, j})));
 }

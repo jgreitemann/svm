@@ -6,11 +6,11 @@
 #include "model.hpp"
 #include "svm.h"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <stdexcept>
 #include <utility>
-
-#include <boost/multi_array.hpp>
 
 
 namespace svm {
@@ -18,7 +18,9 @@ namespace svm {
     namespace kernel {
 
         template <size_t D>
-        struct polynomial;
+        struct polynomial {
+            static size_t const Degree = D;
+        };
 
     }
 
@@ -54,84 +56,48 @@ namespace svm {
     };
 
 
-    template <size_t K>
-    using tensor_t = boost::multi_array<double, K>;
+    template <class Kernel, size_t K, size_t D = Kernel::Degree>
+    struct tensor_introspector {
+        static_assert(K <= D, "invalid tensor rank");
 
-    namespace detail {
-        template <size_t D, size_t K>
-        struct tensor_sequence : public tensor_sequence<D, K-1> {
-            tensor_sequence (model<kernel::polynomial<D>> const& model)
-                : tensor_sequence<D, K-1>(model)
-            {
-                double yalpha;
-                data_view x;
-                using index_t = typename tensor_t<K>::index;
-                std::array<index_t, K> ind;
-                for (index_t & z : ind)
-                    z = 1;
-                ind[0] = pow(N, K);
-                t.resize(ind);
-                for (index_t & z : ind)
-                    z = 0;
-                for (auto p : model) {
-                    std::tie(yalpha, x) = std::move(p);
-                    std::vector<double> xv(x.begin(), x.end());
-                    xv.resize(N);
-                    for (ind[0] = 0; ind[0] < t.shape()[0]; ++ind[0]) {
-                        index_t m = ind[0];
-                        double prod = 1.;
-                        for (size_t k = 0; k < K; ++k, m /= N)
-                            prod *= xv[m % N];
-                        t(ind) += yalpha * prod;
-                    }
+        using poly_model = model<Kernel>;
+
+        tensor_introspector (poly_model const& model)
+            : model_(model), N(model.dim())
+        {
+            fac = binomial(D, K) * pow(model.params().gamma(), K)
+                * pow(model.params().coef0(), D-K);
+        }
+
+        template <size_t L=K, typename = typename std::enable_if<L != 0>::type>
+        double tensor (std::array<size_t, K> ind) const {
+            std::sort(ind.begin(), ind.end());
+            double yalpha;
+            data_view x;
+            double sum = 0;
+            for (auto p : model_) {
+                std::tie(yalpha, x) = std::move(p);
+                double prod = 1.;
+                size_t j = 0;
+                auto itX = x.begin();
+                for (size_t i : ind) {
+                    std::advance(itX, i - j);
+                    j = i;
+                    prod *= *itX;
                 }
-                double fac = binomial(D, K) * pow(model.params().gamma(), K)
-                    * pow(model.params().coef0(), D-K);
-                for (ind[0] = 0; ind[0] < t.shape()[0]; ++ind[0])
-                    t(ind) *= fac;
-                for (index_t & i : ind)
-                    i = N;
-                t.reshape(ind);
+                sum += yalpha * prod;
             }
-
-            using tensor_sequence<D,0>::N;
-        public:
-            tensor_t<K> t;
-        };
-
-        template <size_t D>
-        struct tensor_sequence<D,0> {
-            tensor_sequence<D,0> (model<kernel::polynomial<D>> const& model)
-                : N(model.dim()) {}
-
-            const size_t N;
-        };
-    }
-
-    template <size_t D>
-    struct introspective_model<kernel::polynomial<D>> : public model<kernel::polynomial<D>> {
-
-        using poly_model = model<kernel::polynomial<D>>;
-
-    public:
-        template <typename... Args>
-        introspective_model (Args... args)
-            : poly_model(std::forward<Args>(args)...),
-              tseq(*this) {}
-
-        template <size_t K, typename = typename std::enable_if<(K <= D && K > 0)>::type>
-        tensor_t<K> const& tensor () const {
-            static_assert(K <= D, "invalid tensor rank");
-            return tseq.detail::tensor_sequence<D,K>::t;
+            return fac * sum;
         }
 
-        template <size_t K, typename = typename std::enable_if<K == 0>::type>
+        template <size_t L=K, typename = typename std::enable_if<L == 0>::type>
         double tensor () const {
-            return pow(poly_model::params().coef0(), D);
+            return fac;
         }
-        
     private:
-        detail::tensor_sequence<D,D> tseq;
+        poly_model const& model_;
+        size_t const N;
+        double fac;
     };
 
 }
