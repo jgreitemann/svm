@@ -82,7 +82,7 @@ namespace svm {
                         throw std::runtime_error("incomplete problem");
                     }
                 }
-                prob.add_sample(input_t(xs), y);
+                prob.add_sample(input_t(xs.begin(), xs.end()), y);
             }
             return prob;
         }
