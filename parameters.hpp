@@ -22,6 +22,9 @@ namespace svm {
                 params.cache_size = 100;
                 params.eps = 1e-3;
                 params.nu = 0.1;
+                params.nr_weight = 0;
+                params.weight_label = NULL;
+                params.weight = NULL;
                 params.shrinking = 1;
                 params.probability = 0;
             }
