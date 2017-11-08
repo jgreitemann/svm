@@ -150,6 +150,7 @@ namespace svm {
             model_.m->label = (int *)malloc(sizeof(int) * nr_class);
             std::copy(label.begin(), label.end(), model_.m->label);
 
+            model_.m->sv_indices = nullptr;
             if (ar.is_data("model/probA")) // regression has probA only
             {
                 std::vector<double> probA;
