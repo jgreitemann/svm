@@ -79,11 +79,15 @@ namespace svm {
         }
 
         struct svm_node * ptr () {
-            return data.data();
+            return data_.data();
         }
 
         struct svm_node const * ptr () const {
-            return data.data();
+            return data_.data();
+        }
+
+        std::vector<struct svm_node> const& data () const {
+            return data_;
         }
 
         data_view view () const {
@@ -95,11 +99,11 @@ namespace svm {
         void nodify (OutputIterator begin, OutputIterator end, bool skip_zeros) {
             for (int i = start_index; begin != end; ++i, ++begin)
                 if (!skip_zeros || *begin != 0)
-                    data.push_back({ .index = i, .value = *begin });
-            data.push_back({ .index = -1 });
+                    data_.push_back({ .index = i, .value = *begin });
+            data_.push_back({ .index = -1 });
         }
 
-        std::vector<struct svm_node> data;
+        std::vector<struct svm_node> data_;
         int start_index;
     };
 

@@ -30,13 +30,14 @@ Problem fill_problem (size_t N, size_t M, RNG & rng,
     return prob;
 }
 
-template <class Model, class RNG>
+template <class ModelA, class ModelB, class RNG>
 double test_model (size_t N, size_t M, RNG & rng,
-                   hyperplane_model const& trial_model,
-                   Model & empirical_model)
+                   ModelB & trial_model,
+                   ModelA & empirical_model)
 {
     std::uniform_real_distribution<double> uniform;
-    using input_t = typename Model::input_container_type;
+    using input_a_t = typename ModelA::input_container_type;
+    using input_b_t = typename ModelB::input_container_type;
 
     int correct = 0;
     double y_pred, y_true;
@@ -44,8 +45,8 @@ double test_model (size_t N, size_t M, RNG & rng,
         std::vector<double> xs(N);
         for (double & x : xs)
             x = uniform(rng);
-        std::tie(y_true, std::ignore) = trial_model(xs);
-        std::tie(y_pred, std::ignore) = empirical_model(input_t(std::move(xs)));
+        std::tie(y_true, std::ignore) = trial_model(input_b_t(xs));
+        std::tie(y_pred, std::ignore) = empirical_model(input_a_t(std::move(xs)));
         if (y_true * y_pred > 0)
             ++correct;
     }
