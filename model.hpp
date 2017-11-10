@@ -3,6 +3,7 @@
 #include "dataset.hpp"
 #include "problem.hpp"
 #include "parameters.hpp"
+#include "serializer.hpp"
 #include "svm.h"
 
 #include <utility>
@@ -11,9 +12,6 @@
 
 
 namespace svm {
-
-    template <typename Tag, typename Model>
-    struct serializer;
 
     template <class Kernel>
     class model {
@@ -155,7 +153,7 @@ namespace svm {
         }
 
         template <typename Tag, typename Model>
-        friend struct serializer;
+        friend struct model_serializer;
 
     private:
         problem_t prob;

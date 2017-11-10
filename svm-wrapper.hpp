@@ -5,5 +5,5 @@
 #include "parameters.hpp"
 #include "kernel.hpp"
 #include "model.hpp"
-#include "ascii_serialization.hpp"
+#include "serializer.hpp"
 

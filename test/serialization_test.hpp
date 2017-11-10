@@ -21,11 +21,11 @@ void serializer_test (size_t N, size_t M, double threshold, std::string const& n
         fill_problem<svm::problem<Kernel>>(N, M, rng, trial_model),
         params);
 
-    svm::serializer<Tag, svm::model<Kernel>> saver(empirical_model);
+    svm::model_serializer<Tag, svm::model<Kernel>> saver(empirical_model);
     saver.save(name);
 
     svm::model<Kernel> restored_model;
-    svm::serializer<Tag, svm::model<Kernel>> loader(restored_model);
+    svm::model_serializer<Tag, svm::model<Kernel>> loader(restored_model);
     loader.load(name);
 
     double success_rate = test_model(N, M, rng, trial_model, restored_model);

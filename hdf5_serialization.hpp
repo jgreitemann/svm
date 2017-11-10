@@ -20,9 +20,10 @@ namespace svm {
     struct hdf5_tag;
 
     template <typename Model>
-    struct serializer<hdf5_tag, Model> {
+    struct model_serializer<hdf5_tag, Model> {
 
-        serializer (Model & m) : model_(m) {}
+        model_serializer (Model & m)
+            : model_(m), prob_serializer(m.prob, !problem_t::is_precomputed) {}
 
         void save (std::string const& filename) const {
             alps::hdf5::archive ar(filename, "w");
@@ -30,7 +31,7 @@ namespace svm {
         }
 
         void save (alps::hdf5::archive & ar) const {
-            save_problem(model_.prob, ar);
+            prob_serializer.save(ar);
 
             const svm_parameter& param = model_.m->param;
 
@@ -108,7 +109,7 @@ namespace svm {
         }
 
         void load (alps::hdf5::archive & ar) {
-            model_.prob = load_problem<typename Model::problem_t>(ar);
+            prob_serializer.load(ar);
 
             if (model_.m)
                 svm_free_and_destroy_model(&model_.m);
@@ -214,68 +215,71 @@ namespace svm {
         }
 
     private:
+        using problem_t = typename Model::problem_t;
+        Model & model_;
+        problem_serializer<hdf5_tag, problem_t> prob_serializer;
+    };
 
-        template <class Problem, typename = typename std::enable_if<Problem::is_precomputed>::type, bool dummy = false>
-        void save_problem (Problem const& prob, alps::hdf5::archive & ar) const {
+    template <class Problem>
+    struct problem_serializer<hdf5_tag, Problem> {
+
+        problem_serializer (Problem & prob, bool skip_samples = false)
+            : prob_(prob), full(!skip_samples) {}
+
+        void save (alps::hdf5::archive & ar) const {
+            using input_t = typename Problem::input_container_type;
+            using view_t = typename std::conditional<
+                std::is_same<svm::dataset, input_t>::value,
+                svm::data_view, input_t const&>::type;
+
+            ar["prob/dim"] << prob_.dim();
+
+            if (full) {
+                boost::multi_array<double, 2> orig_data(boost::extents[prob_.size()][prob_.dim()]);
+                std::vector<double> labels(prob_.size());
+
+                for (size_t i = 0; i < prob_.size(); ++i) {
+                    auto p = prob_[i];
+                    view_t xs = p.first;
+                    std::copy(xs.begin(), xs.end(), orig_data[i].begin());
+                    labels[i] = p.second;
+                }
+
+                ar["prob/orig_data"] << orig_data;
+                ar["prob/labels"] << labels;
+            }
+        }
+
+        void load (alps::hdf5::archive & ar) const {
             using input_t = typename Problem::input_container_type;
 
-            ar["prob/dim"] << prob.dim();
+            size_t dim;
+            ar["prob/dim"] >> dim;
+            Problem prob(dim);
 
-            boost::multi_array<double, 2> orig_data(boost::extents[prob.size()][prob.dim()]);
-            std::vector<double> labels(prob.size());
+            if (full) {
+                boost::multi_array<double, 2> orig_data;
+                std::vector<double> labels;
+                ar["prob/orig_data"] >> orig_data;
+                ar["prob/labels"] >> labels;
 
-            for (size_t i = 0; i < prob.size(); ++i) {
-                auto p = prob[i];
-                input_t const& xs = p.first;
-                std::copy(xs.begin(), xs.end(), orig_data[i].begin());
-                labels[i] = p.second;
+                if (orig_data.shape()[0] != labels.size())
+                    throw std::runtime_error("inconsistent data length");
+                if (orig_data.shape()[1] != dim)
+                    throw std::runtime_error("inconsistent data length");
+
+                for (size_t i = 0; i < labels.size(); ++i)
+                    prob.add_sample(input_t(orig_data[i].begin(),
+                                            orig_data[i].end()),
+                                    labels[i]);
             }
 
-            ar["prob/orig_data"] << orig_data;
-            ar["prob/labels"] << labels;
+            prob_ = std::move(prob);
         }
 
-        template <class Problem, typename = typename std::enable_if<Problem::is_precomputed>::type, bool dummy = false>
-        Problem load_problem (alps::hdf5::archive & ar) const {
-            using input_t = typename Problem::input_container_type;
-
-            size_t dim;
-            ar["prob/dim"] >> dim;
-            Problem prob(dim);
-
-            boost::multi_array<double, 2> orig_data;
-            std::vector<double> labels;
-            ar["prob/orig_data"] >> orig_data;
-            ar["prob/labels"] >> labels;
-
-            if (orig_data.shape()[0] != labels.size())
-                throw std::runtime_error("inconsistent data length");
-            if (orig_data.shape()[1] != dim)
-                throw std::runtime_error("inconsistent data length");
-
-            for (size_t i = 0; i < labels.size(); ++i)
-                prob.add_sample(input_t(orig_data[i].begin(),
-                                        orig_data[i].end()),
-                                labels[i]);
-
-            return prob;
-        }
-
-        template <class Problem, typename = typename std::enable_if<!Problem::is_precomputed>::type>
-        void save_problem(Problem const& prob, alps::hdf5::archive & ar) const {
-            ar["prob/dim"] << prob.dim();
-        }
-
-        template <class Problem, typename = typename std::enable_if<!Problem::is_precomputed>::type>
-        Problem load_problem (alps::hdf5::archive & ar) const {
-            size_t dim;
-            ar["prob/dim"] >> dim;
-            Problem prob(dim);
-            return prob;
-        }
-
-        Model & model_;
-
+    private:
+        Problem & prob_;
+        bool full;
     };
 
 }
