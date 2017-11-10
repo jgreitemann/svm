@@ -99,7 +99,7 @@ namespace svm {
         void nodify (OutputIterator begin, OutputIterator end, bool skip_zeros) {
             for (int i = start_index; begin != end; ++i, ++begin)
                 if (!skip_zeros || *begin != 0)
-                    data_.push_back({ .index = i, .value = *begin });
+                    data_.push_back({ .index = i, .value = static_cast<double>(*begin) });
             data_.push_back({ .index = -1 });
         }
 
