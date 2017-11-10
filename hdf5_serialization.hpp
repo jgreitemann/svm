@@ -31,21 +31,21 @@ namespace svm {
         }
 
         void save (alps::hdf5::archive & ar) const {
-            prob_serializer.save(ar);
+            ar["problem"] << prob_serializer;
 
             const svm_parameter& param = model_.m->param;
 
-            ar["model/param/svm_type"] << param.svm_type;
-            ar["model/param/kernel_type"] << param.kernel_type;
+            ar["param/svm_type"] << param.svm_type;
+            ar["param/kernel_type"] << param.kernel_type;
 
             if (param.kernel_type == POLY)
-                ar["model/param/degree"] << param.degree;
+                ar["param/degree"] << param.degree;
 
             if(param.kernel_type == POLY || param.kernel_type == RBF || param.kernel_type == SIGMOID)
-                ar["model/param/gamma"] << param.gamma;
+                ar["param/gamma"] << param.gamma;
 
             if(param.kernel_type == POLY || param.kernel_type == SIGMOID)
-                ar["model/param/coef0"] << param.coef0;
+                ar["param/coef0"] << param.coef0;
 
             int nr_class = model_.m->nr_class;
             int nr_sum = nr_class*(nr_class-1)/2;
@@ -53,31 +53,31 @@ namespace svm {
 
             {
                 std::vector<double> rho(model_.m->rho, model_.m->rho + nr_sum);
-                ar["model/rho"] << rho;
+                ar["rho"] << rho;
             }
 
             if (model_.m->label) {
                 std::vector<int> label(model_.m->label, model_.m->label + nr_class);
-                ar["model/label"] << label;
+                ar["label"] << label;
             }
 
             if (model_.m->probA) // regression has probA only
             {
                 std::vector<double> probA(model_.m->probA,
                                           model_.m->probA + nr_sum);
-                ar["model/probA"] << probA;
+                ar["probA"] << probA;
             }
             if(model_.m->probB)
             {
                 std::vector<double> probB(model_.m->probB,
                                           model_.m->probB + nr_sum);
-                ar["model/probB"] << probB;
+                ar["probB"] << probB;
             }
 
             if(model_.m->nSV)
             {
                 std::vector<int> nSV(model_.m->nSV, model_.m->nSV + nr_class);
-                ar["model/nSV"] << nSV;
+                ar["nSV"] << nSV;
             }
 
             const double * const *sv_coef = model_.m->sv_coef;
@@ -99,8 +99,8 @@ namespace svm {
                     }
                 }
             }
-            ar["model/sv_coef"] << sv_coefm;
-            ar["model/SV"] << SVm;
+            ar["sv_coef"] << sv_coefm;
+            ar["SV"] << SVm;
         }
 
         void load (std::string const& filename) {
@@ -109,7 +109,7 @@ namespace svm {
         }
 
         void load (alps::hdf5::archive & ar) {
-            prob_serializer.load(ar);
+            ar["problem"] >> prob_serializer;
 
             if (model_.m)
                 svm_free_and_destroy_model(&model_.m);
@@ -123,20 +123,20 @@ namespace svm {
             param.weight_label = NULL;
             param.weight = NULL;
 
-            ar["model/param/svm_type"] >> param.svm_type;
-            ar["model/param/kernel_type"] >> param.kernel_type;
+            ar["param/svm_type"] >> param.svm_type;
+            ar["param/kernel_type"] >> param.kernel_type;
             if (param.kernel_type == POLY)
-                ar["model/param/degree"] >> param.degree;
+                ar["param/degree"] >> param.degree;
             if(param.kernel_type == POLY || param.kernel_type == RBF || param.kernel_type == SIGMOID)
-                ar["model/param/gamma"] >> param.gamma;
+                ar["param/gamma"] >> param.gamma;
             if(param.kernel_type == POLY || param.kernel_type == SIGMOID)
-                ar["model/param/coef0"] >> param.coef0;
+                ar["param/coef0"] >> param.coef0;
 
             std::vector<double> rho;
-            ar["model/rho"] >> rho;
+            ar["rho"] >> rho;
 
             std::vector<int> label;
-            ar["model/label"] >> label;
+            ar["label"] >> label;
 
             int nr_class = label.size();
             int nr_sum = rho.size();
@@ -152,20 +152,20 @@ namespace svm {
             std::copy(label.begin(), label.end(), model_.m->label);
 
             model_.m->sv_indices = nullptr;
-            if (ar.is_data("model/probA")) // regression has probA only
+            if (ar.is_data("probA")) // regression has probA only
             {
                 std::vector<double> probA;
-                ar["model/probA"] >> probA;
+                ar["probA"] >> probA;
                 if (probA.size() != nr_sum)
                     throw std::runtime_error("inconsistent data length");
                 model_.m->probA = (double *)malloc(sizeof(double) * nr_sum);
                 std::copy(probA.begin(), probA.end(), model_.m->probA);
             } else
                 model_.m->probA = nullptr;
-            if (ar.is_data("model/probB"))
+            if (ar.is_data("probB"))
             {
                 std::vector<double> probB;
-                ar["model/probB"] >> probB;
+                ar["probB"] >> probB;
                 if (probB.size() != nr_sum)
                     throw std::runtime_error("inconsistent data length");
                 model_.m->probB = (double *)malloc(sizeof(double) * nr_sum);
@@ -174,16 +174,16 @@ namespace svm {
                 model_.m->probB = nullptr;
 
             std::vector<int> nSV;
-            ar["model/nSV"] >> nSV;
+            ar["nSV"] >> nSV;
             if (nSV.size() != nr_class)
                 throw std::runtime_error("inconsistent data length");
             model_.m->nSV = (int *)malloc(sizeof(int) * nr_class);
             std::copy(nSV.begin(), nSV.end(), model_.m->nSV);
 
             boost::multi_array<double,2> sv_coefm;
-            ar["model/sv_coef"] >> sv_coefm;
+            ar["sv_coef"] >> sv_coefm;
             boost::multi_array<double,2> SVm;
-            ar["model/SV"] >> SVm;
+            ar["SV"] >> SVm;
 
             int l = sv_coefm.shape()[0];
             if (sv_coefm.shape()[1] != nr_class-1)
@@ -232,7 +232,7 @@ namespace svm {
                 std::is_same<svm::dataset, input_t>::value,
                 svm::data_view, input_t const&>::type;
 
-            ar["prob/dim"] << prob_.dim();
+            ar["dim"] << prob_.dim();
 
             if (full) {
                 boost::multi_array<double, 2> orig_data(boost::extents[prob_.size()][prob_.dim()]);
@@ -245,8 +245,8 @@ namespace svm {
                     labels[i] = p.second;
                 }
 
-                ar["prob/orig_data"] << orig_data;
-                ar["prob/labels"] << labels;
+                ar["orig_data"] << orig_data;
+                ar["labels"] << labels;
             }
         }
 
@@ -254,14 +254,14 @@ namespace svm {
             using input_t = typename Problem::input_container_type;
 
             size_t dim;
-            ar["prob/dim"] >> dim;
+            ar["dim"] >> dim;
             Problem prob(dim);
 
             if (full) {
                 boost::multi_array<double, 2> orig_data;
                 std::vector<double> labels;
-                ar["prob/orig_data"] >> orig_data;
-                ar["prob/labels"] >> labels;
+                ar["orig_data"] >> orig_data;
+                ar["labels"] >> labels;
 
                 if (orig_data.shape()[0] != labels.size())
                     throw std::runtime_error("inconsistent data length");
