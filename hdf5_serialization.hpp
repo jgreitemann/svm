@@ -83,24 +83,29 @@ namespace svm {
             const double * const *sv_coef = model_.m->sv_coef;
             const svm_node * const *SV = model_.m->SV;
 
-            boost::multi_array<double,2> sv_coefm(boost::extents[l][nr_class-1]);
-            boost::multi_array<double,2> SVm(boost::extents[l][model_.prob.dim()]);
-            for (int i = 0; i < l; ++i) {
-                for (int j = 0; j < nr_class - 1; ++j)
-                    sv_coefm[i][j] = sv_coef[j][i];
-
-                if (param.kernel_type == PRECOMPUTED)
+            {
+                boost::multi_array<double,2> sv_coefm(boost::extents[l][nr_class-1]);
+                for (int i = 0; i < l; ++i)
+                    for (int j = 0; j < nr_class - 1; ++j)
+                        sv_coefm[i][j] = sv_coef[j][i];
+                ar["sv_coef"] << sv_coefm;
+            }
+            if (param.kernel_type == PRECOMPUTED) {
+                boost::multi_array<double,2> SVm(boost::extents[l][1]);
+                for (int i = 0; i < l; ++i)
                     SVm[i][0] = SV[i]->value;
-                else {
+                ar["SV"] << SVm;
+            } else {
+                boost::multi_array<double,2> SVm(boost::extents[l][model_.prob.dim()]);
+                for (int i = 0; i < l; ++i) {
                     svm::data_view v(SV[i]);
                     auto it = v.begin();
                     for (int j = 1; it != v.end(); ++j, ++it) {
                         SVm[i][j-1] = *it;
                     }
                 }
+                ar["SV"] << SVm;
             }
-            ar["sv_coef"] << sv_coefm;
-            ar["SV"] << SVm;
         }
 
         void load (std::string const& filename) {
@@ -190,7 +195,8 @@ namespace svm {
                 throw std::runtime_error("inconsistent data length");
             if (SVm.shape()[0] != l)
                 throw std::runtime_error("inconsistent data length");
-            if (SVm.shape()[1] != model_.prob.dim())
+            size_t expected_size = Model::problem_t::is_precomputed ? 1 : model_.prob.dim();
+            if (SVm.shape()[1] != expected_size)
                 throw std::runtime_error("inconsistent data length");
             model_.m->l = l;
 
