@@ -3,6 +3,7 @@
 #include "dataset.hpp"
 #include "svm.h"
 
+#include <iterator>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -31,6 +32,18 @@ namespace svm {
             void add_sample(Container const& ds, double label) {
                 orig_data.push_back(ds);
                 labels.push_back(label);
+            }
+
+            void append_problem (basic_problem && other) {
+                orig_data.reserve(orig_data.size() + other.orig_data.size());
+                orig_data.insert(orig_data.end(),
+                                 std::make_move_iterator(other.orig_data.begin()),
+                                 std::make_move_iterator(other.orig_data.end()));
+                other.orig_data.clear();
+                labels.insert(labels.end(),
+                              other.labels.begin(),
+                              other.labels.end());
+                other.labels.clear();
             }
 
             std::pair<Container const&, double> operator[] (size_t i) const {
