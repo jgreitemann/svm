@@ -1,10 +1,10 @@
 #pragma once
 
-#include "binomial.hpp"
 #include "problem.hpp"
 #include "parameters.hpp"
 #include "model.hpp"
 #include "svm.h"
+#include "combinatorics.hpp"
 
 #include <algorithm>
 #include <array>
@@ -65,8 +65,9 @@ namespace svm {
         tensor_introspector (poly_model const& model)
             : model_(model), N(model.dim())
         {
-            fac = binomial(D, K) * pow(model.params().gamma(), K)
-                * pow(model.params().coef0(), D-K);
+            using namespace combinatorics;
+            fac = binomial(D, K) * ipow(model.params().gamma(), K)
+                * ipow(model.params().coef0(), D-K);
         }
 
         template <size_t L=K, typename = typename std::enable_if<L != 0>::type>
