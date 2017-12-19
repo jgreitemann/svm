@@ -3,7 +3,7 @@
 #include "doctest.h"
 #include "svm-wrapper.hpp"
 #include "hyperplane_model.hpp"
-#include "hyperplane_test.hpp"
+#include "model_test.hpp"
 
 #include <iostream>
 #include <random>
@@ -18,7 +18,7 @@ void serializer_test (size_t N, size_t M, double threshold, std::string const& n
     hyperplane_model trial_model(N, rng);
     svm::parameters<Kernel> params;
     svm::model<Kernel> empirical_model(
-        fill_problem<svm::problem<Kernel>>(N, M, rng, trial_model),
+        fill_problem<svm::problem<Kernel>>(M, rng, trial_model),
         params);
 
     svm::model_serializer<Tag, svm::model<Kernel>> saver(empirical_model);
@@ -28,10 +28,10 @@ void serializer_test (size_t N, size_t M, double threshold, std::string const& n
     svm::model_serializer<Tag, svm::model<Kernel>> loader(restored_model);
     loader.load(name);
 
-    double success_rate = test_model(N, M, rng, trial_model, restored_model);
+    double success_rate = test_model(M, rng, trial_model, restored_model);
     std::cout << "success rate: " << 100. * success_rate << "%\n";
     CHECK(success_rate > threshold);
 
-    success_rate = test_model(N, M, rng, empirical_model, restored_model);
+    success_rate = test_model(M, rng, empirical_model, restored_model);
     CHECK(success_rate == doctest::Approx(1.));
 }

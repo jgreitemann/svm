@@ -4,7 +4,7 @@
 #include "svm-wrapper.hpp"
 #include "kernel/linear_precomputed.hpp"
 #include "hyperplane_model.hpp"
-#include "hyperplane_test.hpp"
+#include "model_test.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -20,7 +20,7 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
 
     svm::parameters<Kernel> params;
     svm::model<Kernel> empirical_model(
-        fill_problem<svm::problem<Kernel>>(N, M, rng, trial_model),
+        fill_problem<svm::problem<Kernel>>(M, rng, trial_model),
         params);
     using input_t = typename svm::model<Kernel>::input_container_type;
     svm::linear_introspector<Kernel> introspector(empirical_model);

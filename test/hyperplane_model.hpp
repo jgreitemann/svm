@@ -31,6 +31,10 @@ public:
     std::vector<double> const& coefficients () const {
         return coeffs;
     }
+
+    size_t dim () const {
+        return coeffs.size();
+    }
 private:
     std::vector<double> coeffs;
 };
