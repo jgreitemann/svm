@@ -21,38 +21,88 @@ namespace svm {
             typedef double & reference;
             typedef std::input_iterator_tag iterator_category;
 
-            const_iterator (struct svm_node const * ptr, int index = 1);
-            const_iterator & operator++ ();
-            const_iterator operator++ (int);
-            double operator* () const;
-            bool is_end () const;
-            friend bool operator== (const_iterator, const_iterator);
-            friend bool operator!= (const_iterator, const_iterator);
+            const_iterator (struct svm_node const * ptr, int index = 1)
+                : ptr(ptr), index(index) {}
+
+            const_iterator & operator++ () {
+                if (ptr->index == index)
+                    ++ptr;
+                ++index;
+                return *this;
+            }
+
+            const_iterator operator++ (int) {
+                const_iterator old(*this);
+                ++(*this);
+                return old;
+            }
+
+            double operator* () const {
+                if (ptr->index == index)
+                    return ptr->value;
+                return 0.;
+            }
+
+            bool is_end () const {
+                return index == -1 || ptr->index == -1;
+            }
+
+            friend bool operator== (const_iterator lhs, const_iterator rhs) {
+                if (lhs.is_end() && rhs.is_end())
+                    return true;
+                return lhs.index == rhs.index && lhs.ptr == rhs.ptr;
+            }
+
+            friend bool operator!= (const_iterator lhs, const_iterator rhs) {
+                return !(lhs == rhs);
+            }
+
         private:
             struct svm_node const * ptr;
             int index;
         };
 
-        data_view ();
-        data_view (struct svm_node const * ptr, int start_index = 1);
-        data_view (dataset const&);
+        data_view ()
+            : begin_ptr(nullptr), start_index(-1) {}
 
-        const_iterator begin () const;
-        const_iterator end () const;
+        data_view (struct svm_node const * ptr, int start_index = 1)
+            : begin_ptr(ptr), start_index(start_index) {}
+
+        data_view (dataset const& ds); // forward declaration
+
+        const_iterator begin () const {
+            if (start_index == -1)
+                return end();
+            return const_iterator(begin_ptr, start_index);
+        }
+
+        const_iterator end () const {
+            return const_iterator(nullptr, -1);
+        }
 
         double front () const {
             return *begin();
         }
 
-        double dot (data_view other) const;
+        double dot (data_view other) const {
+            data_view::const_iterator lhs = begin();
+            data_view::const_iterator rhs = other.begin();
+            double sum = 0;
+            for (; lhs != end() && rhs != other.end(); ++lhs, ++rhs) {
+                sum += *lhs * *rhs;
+            }
+            return sum;
+        }
+
     private:
         struct svm_node const * begin_ptr;
         int start_index;
     };
 
-    bool operator== (data_view::const_iterator, data_view::const_iterator);
-    bool operator!= (data_view::const_iterator, data_view::const_iterator);
-    double dot (data_view, data_view);
+    double dot (data_view lhs, data_view rhs) {
+        return lhs.dot(rhs);
+    }
+
 
     class dataset {
     public:
@@ -106,5 +156,9 @@ namespace svm {
         std::vector<struct svm_node> data_;
         int start_index;
     };
+
+    data_view::data_view (dataset const& ds) {
+        *this = ds.view();
+    }
 
 }
