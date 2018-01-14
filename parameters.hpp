@@ -33,6 +33,9 @@ namespace svm {
                     throw std::logic_error("SVM type not supported");
                 }
                 params.svm_type = static_cast<int>(mtype);
+                params.degree = 0;
+                params.gamma = 0;
+                params.coef0 = 0;
                 params.cache_size = 100;
                 params.eps = 1e-3;
                 params.nr_weight = 0;
