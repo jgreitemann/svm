@@ -6,9 +6,10 @@
 #include "serializer.hpp"
 #include "svm.h"
 
-#include <utility>
+#include <cmath>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 
 namespace svm {
@@ -90,6 +91,8 @@ namespace svm {
                 throw std::runtime_error(err_str);
             }
             m = svm_train(&svm_prob, params_.svm_params_ptr());
+            if (isnan(rho()))
+                throw std::runtime_error("SVM returned NaN. Specified nu is infeasible.");
         }
 
         model (model const&) = delete;
