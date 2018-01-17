@@ -106,6 +106,8 @@ namespace svm {
 
     class dataset {
     public:
+        using const_iterator = data_view::const_iterator;
+
         template <typename OutputIterator>
         dataset (OutputIterator begin, OutputIterator end,
                  int start_index = 1, bool skip_zeros = true)
@@ -142,6 +144,14 @@ namespace svm {
 
         data_view view () const {
             return data_view(ptr(), start_index);
+        }
+
+        const_iterator begin () const {
+            return view().begin();
+        }
+
+        const_iterator end () const {
+            return view().end();
         }
 
     private:
