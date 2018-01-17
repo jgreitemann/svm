@@ -14,6 +14,10 @@ add_executable(hyperplane-poly hyperplane_poly.cpp)
 target_link_libraries(hyperplane-poly svm)
 add_test(hyperplane-poly hyperplane-poly)
 
+add_executable(hyperplane-sigmoid hyperplane_sigmoid.cpp)
+target_link_libraries(hyperplane-sigmoid svm)
+add_test(hyperplane-sigmoid hyperplane-sigmoid)
+
 add_executable(hyperplane-coeffs hyperplane_coeffs.cpp)
 target_link_libraries(hyperplane-coeffs svm)
 add_test(hyperplane-coeffs hyperplane-coeffs)
