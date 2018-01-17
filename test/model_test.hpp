@@ -56,8 +56,8 @@ double test_model (size_t M, RNG & rng,
 }
 
 template <class Kernel, class TrialModel, class RNG_t = std::mt19937>
-void model_test (size_t M, double threshold, TrialModel const& trial_model, RNG_t rng = RNG_t(42)) {
-    svm::parameters<Kernel> params;
+void model_test (size_t M, double threshold, TrialModel const& trial_model, RNG_t rng = RNG_t(42), double nu = 0.1) {
+    svm::parameters<Kernel> params(nu);
     svm::model<Kernel> empirical_model(
         fill_problem<svm::problem<Kernel>>(M, rng, trial_model),
         params);
