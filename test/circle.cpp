@@ -24,3 +24,10 @@ TEST_CASE("circle-rbf") {
     circle_model trial_model({0.3, 0.2}, 0.3);
     model_test<svm::kernel::rbf>(1000, 0.98, trial_model, rng, 0.01);
 }
+
+TEST_CASE("circle-sigmoid") {
+    std::mt19937 rng(42);
+    circle_model trial_model({0.3, 0.2}, 0.3);
+    model_test<svm::kernel::sigmoid>(1000, 0.85, trial_model, rng, 0.45);
+}
+
