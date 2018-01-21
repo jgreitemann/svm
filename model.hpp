@@ -91,7 +91,7 @@ namespace svm {
                 throw std::runtime_error(err_str);
             }
             m = svm_train(&svm_prob, params_.svm_params_ptr());
-            if (isnan(rho()))
+            if (std::isnan(rho()))
                 throw std::runtime_error("SVM returned NaN. Specified nu is infeasible.");
         }
 
