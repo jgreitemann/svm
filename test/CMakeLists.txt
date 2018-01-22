@@ -32,7 +32,7 @@ add_executable(ascii-serialization ascii_serialization.cpp)
 target_link_libraries(ascii-serialization svm)
 add_test(ascii-serialization ascii-serialization)
 
-find_package(ALPSCore 1.0 REQUIRED)
+find_package(ALPSCore)
 add_executable(hdf5-serialization hdf5_serialization.cpp)
 target_link_libraries(hdf5-serialization svm ${ALPSCore_LIBRARIES})
 add_test(hdf5-serialization hdf5-serialization)

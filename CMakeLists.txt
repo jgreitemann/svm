@@ -10,7 +10,5 @@ if(OPENMP_FOUND)
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
 
-find_package(ALPSCore 1.0 REQUIRED)
-
 add_subdirectory(libsvm)
 add_subdirectory(test)
