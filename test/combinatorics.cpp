@@ -41,3 +41,12 @@ TEST_CASE("binomial-from-multinomial") {
         }
     }
 }
+
+
+TEST_CASE("number-of-permutations") {
+    CHECK(number_of_permutations(std::vector<int> {1, 4, 1, 4, 2, 1, 3, 5}) == 3360);
+    CHECK(number_of_permutations(std::vector<int> {3, 1, 4, 1, 5, 9, 2, 6}) == 20160);
+    CHECK(number_of_permutations(std::vector<int> {1, 1, 1, 1, 1}) == 1);
+    CHECK(number_of_permutations(std::vector<int> {1, 1, 2, 1, 1}) == 5);
+    CHECK(number_of_permutations(std::vector<int> {}) == 1);
+}

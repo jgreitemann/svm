@@ -16,7 +16,7 @@ namespace combinatorics {
             auto M = std::distance(begin, end);
             T n = std::accumulate(begin, end, 0);
             if (M < 2)
-                throw std::runtime_error("Multinomial coefficient ill-defined for less than two k's.");
+                return 1;
             --end;
             T c = 1, i = 1;
             auto m = M - 1;
