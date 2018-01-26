@@ -6,6 +6,7 @@
 #include <limits>
 #include <numeric>
 #include <stdexcept>
+#include <vector>
 
 
 namespace combinatorics {
