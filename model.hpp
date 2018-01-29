@@ -147,6 +147,10 @@ namespace svm {
             return m->rho[0];
         }
 
+        std::pair<size_t, size_t> nSV () const {
+            return {m->nSV[0], m->nSV[1]};
+        }
+
         size_t dim () const {
             return prob.dim();
         }
