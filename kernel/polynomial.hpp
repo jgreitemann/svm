@@ -39,21 +39,16 @@ namespace svm {
             }
         }
         template <typename... Args>
-        parameters (double gamma, double c0, Args... args) : detail::basic_parameters(args...) {
-            params.kernel_type = POLY;
-            params.degree = D;
-            params.gamma = gamma;
-            params.coef0 = c0;
-        }
-        template <typename... Args>
         parameters (Args... args) : detail::basic_parameters(args...) {
             params.kernel_type = POLY;
             params.degree = D;
             params.gamma = 1.;
             params.coef0 = 0.;
         }
-        double gamma () const { return params.gamma; }
-        double coef0 () const { return params.coef0; }
+        double & gamma () { return params.gamma; }
+        double const& gamma () const { return params.gamma; }
+        double & coef0 () { return params.coef0; }
+        double const& coef0 () const { return params.coef0; }
     };
 
 

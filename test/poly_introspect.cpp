@@ -27,7 +27,10 @@ static const model_t model = [] {
     auto itY = ys.begin();
     for (; itX != xs.end(); ++itX, ++itY)
         prob.add_sample(svm::dataset(*itX), *itY);
-    return model_t(std::move(prob), param_t(1., 0.5));
+    param_t params;
+    params.gamma() = 1;
+    params.coef0() = 0.5;
+    return model_t(std::move(prob), params);
 } ();
 
 static const array_t ya = [] {
