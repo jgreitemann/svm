@@ -51,7 +51,7 @@ namespace svm {
         }
         template <typename... Args>
         parameters (Args... args) : detail::basic_parameters(args...) {
-            params.kernel_type = RBF;
+            params.kernel_type = SIGMOID;
             params.gamma = 1.;
             params.coef0 = 0.;
         }

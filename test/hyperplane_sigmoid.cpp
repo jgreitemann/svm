@@ -27,6 +27,6 @@
 
 TEST_CASE("hyperplane-sigmoid") {
     std::mt19937 rng(42);
-    hyperplane_model trial_model(25, rng);
-    model_test<svm::kernel::sigmoid>(2500, 0.94, trial_model, rng);
+    hyperplane_model trial_model(2, rng);
+    model_test<svm::kernel::sigmoid>(2500, 0.94, trial_model, rng, 0.4);
 }
