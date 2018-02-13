@@ -2,6 +2,9 @@ include_directories(..)
 include_directories(../libsvm)
 include_directories(doctest)
 
+add_executable(example example.cpp)
+target_link_libraries(example svm)
+
 add_executable(combinatorics combinatorics.cpp)
 add_test(combinatorics combinatorics)
 
