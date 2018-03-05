@@ -21,6 +21,7 @@
 #include "dataset.hpp"
 #include "svm.h"
 
+#include <algorithm>
 #include <iterator>
 #include <type_traits>
 #include <utility>
@@ -74,6 +75,11 @@ namespace svm {
 
             size_t dim () const {
                 return dimension;
+            }
+
+            template <typename UnaryFunction>
+            void map_labels (UnaryFunction const& map) {
+                std::transform(labels.begin(), labels.end(), labels.begin(), map);
             }
         protected:
             std::vector<Container> orig_data;
