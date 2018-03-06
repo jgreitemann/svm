@@ -227,10 +227,11 @@ namespace svm {
             }
 
             model_.m->SV = (struct svm_node **)malloc(sizeof(struct svm_node *) * l);
+            struct svm_node * SVmem = (struct svm_node *)malloc(sizeof(struct svm_node) * l * (expected_size + 1));
             size_t start_index = Model::problem_t::is_precomputed ? 0 : 1;
             for (int i = 0; i < l; ++i) {
                 svm::dataset ds(SVm[i].begin(), SVm[i].end(), start_index);
-                model_.m->SV[i] = (struct svm_node *)malloc(sizeof(struct svm_node) * ds.data().size());
+                model_.m->SV[i] = SVmem + i * (expected_size + 1);
                 std::copy(ds.data().begin(), ds.data().end(), model_.m->SV[i]);
             }
 
