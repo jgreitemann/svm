@@ -5,6 +5,9 @@ include_directories(doctest)
 add_executable(combinatorics combinatorics.cpp)
 add_test(combinatorics combinatorics)
 
+add_executable(problem problem.cpp)
+add_test(problem problem)
+
 add_executable(hyperplane-builtin hyperplane_builtin.cpp)
 target_link_libraries(hyperplane-builtin svm)
 add_test(hyperplane-builtin hyperplane-builtin)
