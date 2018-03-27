@@ -24,9 +24,9 @@
 
 
 TEST_CASE("serializer-hdf5-builtin") {
-    serializer_test<svm::kernel::linear, svm::hdf5_tag>(25, 2500, 0.98, "hdf5-builtin.h5");
+    serializer_test<svm::kernel::linear, svm::hdf5_tag>(4, 1000, 0.99, "hdf5-builtin.h5");
 }
 
 TEST_CASE("serializer-hdf5-precomputed") {
-    serializer_test<svm::kernel::linear_precomputed, svm::hdf5_tag>(25, 2500, 0.98, "hdf5-precomputed.h5");
+    serializer_test<svm::kernel::linear_precomputed, svm::hdf5_tag>(4, 1000, 0.99, "hdf5-precomputed.h5");
 }

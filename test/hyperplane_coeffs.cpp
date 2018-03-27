@@ -56,7 +56,7 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
     // manually calculated from the inferred hyperplane coeffs
     std::uniform_real_distribution<double> uniform;
     double d_pred, d_calc;
-    for (size_t m = 0; m < 25; ++m) {
+    for (size_t m = 0; m < N; ++m) {
         std::vector<double> xs(N);
         for (double & x : xs)
             x = uniform(rng);
@@ -81,9 +81,9 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
 }
 
 TEST_CASE("hyperplane-coeffs-builtin") {
-    hyperplane_coeffs_test<svm::kernel::linear>(25, 10000, 0.1);
+    hyperplane_coeffs_test<svm::kernel::linear>(4, 25000, 0.025);
 }
 
 TEST_CASE("hyperplane-coeffs-precomputed") {
-    hyperplane_coeffs_test<svm::kernel::linear_precomputed>(25, 10000, 0.1);
+    hyperplane_coeffs_test<svm::kernel::linear_precomputed>(4, 5000, 0.1);
 }
