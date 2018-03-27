@@ -36,9 +36,9 @@ namespace svm {
 
     }
 
-    template <>
-    class problem<kernel::linear> : public detail::patch_through_problem {
-        using detail::patch_through_problem::patch_through_problem;
+    template <class Label>
+    class problem<kernel::linear, Label> : public detail::patch_through_problem<Label> {
+        using detail::patch_through_problem<Label>::patch_through_problem;
     };
 
     template <>

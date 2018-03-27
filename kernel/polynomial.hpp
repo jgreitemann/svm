@@ -43,9 +43,9 @@ namespace svm {
 
     }
 
-    template <size_t D>
-    class problem<kernel::polynomial<D>> : public detail::patch_through_problem {
-        using detail::patch_through_problem::patch_through_problem;
+    template <size_t D, class Label>
+    class problem<kernel::polynomial<D>, Label> : public detail::patch_through_problem<Label> {
+        using detail::patch_through_problem<Label>::patch_through_problem;
     };
 
     template <size_t D>
