@@ -20,6 +20,7 @@
 
 #include "doctest.h"
 #include "svm-wrapper.hpp"
+#include "label.hpp"
 
 #include <complex>
 #include <iostream>
@@ -112,20 +113,10 @@ TEST_CASE("problem-map-append") {
     CHECK(c.size() == 0);
 }
 
-namespace binary_class {
-    struct label {
-        static const size_t number_classes = 2;
-        label (bool val) : val (val) {}
-        label (double x) : val (x >= 0) {}
-        operator double() const { return val ? +1. : -1.; }
-        friend bool operator== (label lhs, label rhs) { return lhs.val == rhs.val; }
-    private:
-        const bool val;
-    };
-
-    const label WHITE { +1. };
-    const label BLACK { -1. };
-}
+SVM_LABEL_BEGIN(binary_class, 2)
+SVM_LABEL_ADD(WHITE)
+SVM_LABEL_ADD(BLACK)
+SVM_LABEL_END()
 
 TEST_CASE("problem-map-binary-classification") {
     using cmplx = std::complex<double>;
@@ -146,12 +137,60 @@ TEST_CASE("problem-map-binary-classification") {
 
     auto classifier = [] (cmplx c) -> binary_class::label {
         double angle = std::arg(c);
-        return { angle > 1. || angle < 1.-M_PI };
+        return (angle > 1. || angle < 1.-M_PI) ? binary_class::WHITE : binary_class::BLACK;
     };
 
     svm::problem<kernel_t, binary_class::label> mapped_problem(std::move(prob), classifier);
 
     using model_t = svm::model<kernel_t, binary_class::label>;
+    model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
+    double succ = 0.;
+    double dec;
+    for (size_t i = 0; i < M; ++i) {
+        cmplx c {uniform(rng), uniform(rng)};
+        auto label = model(C {c.real(), c.imag()}).first;
+        if (classifier(c) == label)
+            succ += 1.;
+    }
+    succ /= M;
+    std::cout << "success rate: " << succ << std::endl;
+    CHECK(succ > 0.99);
+}
+
+
+SVM_LABEL_BEGIN(ternary_class, 3)
+SVM_LABEL_ADD(RED)
+SVM_LABEL_ADD(GREEN)
+SVM_LABEL_ADD(BLUE)
+SVM_LABEL_END()
+
+TEST_CASE("problem-map-ternary-classification") {
+    using cmplx = std::complex<double>;
+    using kernel_t = svm::kernel::linear;
+    using problem_t = svm::problem<kernel_t, cmplx>;
+    using C = typename problem_t::input_container_type;
+
+    const size_t M = 1000;
+
+    std::mt19937 rng(42);
+    std::uniform_real_distribution<double> uniform(-1, 1);
+
+    problem_t prob(2);
+    for (size_t i = 0; i < M; ++i) {
+        cmplx c {uniform(rng), uniform(rng)};
+        prob.add_sample(C {c.real(), c.imag()}, c);
+    }
+
+    auto classifier = [] (cmplx c) -> ternary_class::label {
+        double angle = std::arg(c);
+        if (angle < -1) return ternary_class::RED;
+        if (angle <  1) return ternary_class::GREEN;
+        return ternary_class::BLUE;
+    };
+
+    svm::problem<kernel_t, ternary_class::label> mapped_problem(std::move(prob), classifier);
+
+    using model_t = svm::model<kernel_t, ternary_class::label>;
     model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
     double succ = 0.;
     double dec;
