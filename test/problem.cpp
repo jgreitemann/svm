@@ -112,6 +112,21 @@ TEST_CASE("problem-map-append") {
     CHECK(c.size() == 0);
 }
 
+namespace binary_class {
+    struct label {
+        static const size_t number_classes = 2;
+        label (bool val) : val (val) {}
+        label (double x) : val (x >= 0) {}
+        operator double() const { return val ? +1. : -1.; }
+        friend bool operator== (label lhs, label rhs) { return lhs.val == rhs.val; }
+    private:
+        const bool val;
+    };
+
+    const label WHITE { +1. };
+    const label BLACK { -1. };
+}
+
 TEST_CASE("problem-map-binary-classification") {
     using cmplx = std::complex<double>;
     using kernel_t = svm::kernel::linear;
@@ -129,20 +144,21 @@ TEST_CASE("problem-map-binary-classification") {
         prob.add_sample(C {c.real(), c.imag()}, c);
     }
 
-    auto classifier = [] (cmplx c) -> double {
+    auto classifier = [] (cmplx c) -> binary_class::label {
         double angle = std::arg(c);
-        return (angle > 1. || angle < 1.-M_PI) ? +1. : -1.;
+        return { angle > 1. || angle < 1.-M_PI };
     };
 
-    svm::problem<kernel_t, double> mapped_problem(std::move(prob), classifier);
+    svm::problem<kernel_t, binary_class::label> mapped_problem(std::move(prob), classifier);
 
-    svm::model<kernel_t> model(std::move(mapped_problem), svm::parameters<kernel_t> {});
+    using model_t = svm::model<kernel_t, binary_class::label>;
+    model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
     double succ = 0.;
-    double label, dec;
+    double dec;
     for (size_t i = 0; i < M; ++i) {
         cmplx c {uniform(rng), uniform(rng)};
-        std::tie(label, dec) = model(C {c.real(), c.imag()});
-        if (classifier(c) == doctest::Approx(label))
+        auto label = model(C {c.real(), c.imag()}).first;
+        if (classifier(c) == label)
             succ += 1.;
     }
     succ /= M;

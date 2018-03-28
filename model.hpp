@@ -32,12 +32,13 @@
 
 namespace svm {
 
-    template <class Kernel>
+    template <class Kernel, class Label = double>
     class model {
     public:
-        typedef problem<Kernel> problem_t;
+        typedef problem<Kernel, Label> problem_t;
         typedef parameters<Kernel> parameters_t;
         typedef typename problem_t::input_container_type input_container_type;
+        typedef Label label_type;
 
         class const_iterator {
         public:
@@ -140,17 +141,17 @@ namespace svm {
         }
 
         template <typename Problem = problem_t, typename = typename std::enable_if<!Problem::is_precomputed>::type>
-        std::pair<double, double> operator() (input_container_type const& xj) {
+        std::pair<Label, double> operator() (input_container_type const& xj) {
             double dec;
-            double label =  svm_predict_values(m, xj.ptr(), &dec);
+            Label label(svm_predict_values(m, xj.ptr(), &dec));
             return std::make_pair(label, dec);
         }
 
         template <typename Problem = problem_t, typename = typename std::enable_if<Problem::is_precomputed>::type, bool dummy = false>
-        std::pair<double, double> operator() (input_container_type const& xj) {
+        std::pair<Label, double> operator() (input_container_type const& xj) {
             dataset kernelized = prob.kernelize(xj);
             double dec;
-            double label = svm_predict_values(m, kernelized.ptr(), &dec);
+            Label label(svm_predict_values(m, kernelized.ptr(), &dec));
             return std::make_pair(label, dec);
         }
 

@@ -128,10 +128,13 @@ namespace svm {
                 ptrs.clear();
                 for (dataset & ds : orig_data)
                     ptrs.push_back(ds.ptr());
+                raw_labels.clear();
+                for (Label const& l : labels)
+                    raw_labels.push_back(l);
                 struct svm_problem p;
                 p.x = ptrs.data();
-                p.y = labels.data();
-                p.l = labels.size();
+                p.y = raw_labels.data();
+                p.l = raw_labels.size();
                 return p;
             }
 
@@ -141,6 +144,7 @@ namespace svm {
             using basic_problem<dataset, Label>::orig_data;
             using basic_problem<dataset, Label>::labels;
             std::vector<struct svm_node *> ptrs;
+            std::vector<double> raw_labels;
         };
 
         template <class Kernel, class Container, class Label>
