@@ -19,9 +19,13 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
 #include "doctest.h"
-#include "problem.hpp"
+#include "svm-wrapper.hpp"
 
+#include <complex>
+#include <iostream>
+#include <random>
 #include <vector>
+#include <tuple>
 
 
 using svm::detail::basic_problem;
@@ -106,4 +110,42 @@ TEST_CASE("problem-map-append") {
 
     test_problems_equal(a, b);
     CHECK(c.size() == 0);
+}
+
+TEST_CASE("problem-map-binary-classification") {
+    using cmplx = std::complex<double>;
+    using kernel_t = svm::kernel::linear;
+    using problem_t = svm::problem<kernel_t, cmplx>;
+    using C = typename problem_t::input_container_type;
+
+    const size_t M = 1000;
+
+    std::mt19937 rng(42);
+    std::uniform_real_distribution<double> uniform(-1, 1);
+
+    problem_t prob(2);
+    for (size_t i = 0; i < M; ++i) {
+        cmplx c {uniform(rng), uniform(rng)};
+        prob.add_sample(C {c.real(), c.imag()}, c);
+    }
+
+    auto classifier = [] (cmplx c) -> double {
+        double angle = std::arg(c);
+        return (angle > 1. || angle < 1.-M_PI) ? +1. : -1.;
+    };
+
+    svm::problem<kernel_t, double> mapped_problem(std::move(prob), classifier);
+
+    svm::model<kernel_t> model(std::move(mapped_problem), svm::parameters<kernel_t> {});
+    double succ = 0.;
+    double label, dec;
+    for (size_t i = 0; i < M; ++i) {
+        cmplx c {uniform(rng), uniform(rng)};
+        std::tie(label, dec) = model(C {c.real(), c.imag()});
+        if (classifier(c) == doctest::Approx(label))
+            succ += 1.;
+    }
+    succ /= M;
+    std::cout << "success rate: " << succ << std::endl;
+    CHECK(succ > 0.99);
 }

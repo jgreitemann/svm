@@ -6,6 +6,7 @@ add_executable(combinatorics combinatorics.cpp)
 add_test(combinatorics combinatorics)
 
 add_executable(problem problem.cpp)
+target_link_libraries(problem svm)
 add_test(problem problem)
 
 add_executable(hyperplane-builtin hyperplane_builtin.cpp)
