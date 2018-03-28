@@ -33,6 +33,13 @@ namespace svm {
 
     namespace detail {
 
+        template <class Label>
+        struct is_convertible_label
+            : std::integral_constant<bool,
+                                     bool(std::is_convertible<Label, double>::value)
+                                     && bool(std::is_convertible<double, Label>::value)
+                                     > {};
+
         template <class Container, class Label>
         class basic_problem {
         public:
@@ -124,6 +131,8 @@ namespace svm {
             patch_through_problem(OtherProblem && other, UnaryFunction map)
                 : basic_problem<dataset, Label>(std::move(other), map) {}
 
+            template <typename ..., typename L = Label,
+                      typename = typename std::enable_if<is_convertible_label<L>::value>::type>
             struct svm_problem generate() {
                 ptrs.clear();
                 for (dataset & ds : orig_data)
@@ -167,6 +176,8 @@ namespace svm {
             precompute_kernel_problem (const Kernel & k, size_t dim)
                 : basic_problem<Container, Label>(dim), kernel(k) {}
 
+            template <typename ..., class L = Label,
+                      typename = typename std::enable_if<is_convertible_label<L>::value>::type>
             struct svm_problem generate() {
                 kernel_data.clear();
                 ptrs.clear();
