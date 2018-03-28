@@ -100,6 +100,9 @@ namespace svm {
             void map_labels (UnaryFunction const& map) {
                 std::transform(labels.begin(), labels.end(), labels.begin(), map);
             }
+
+            template <class OtherContainer, class OtherLabel>
+            friend class basic_problem;
         protected:
             std::vector<Container> orig_data;
             std::vector<Label> labels;
@@ -131,6 +134,9 @@ namespace svm {
                 p.l = labels.size();
                 return p;
             }
+
+            template <class OtherContainer, class OtherLabel>
+            friend class basic_problem;
         private:
             using basic_problem<dataset, Label>::orig_data;
             using basic_problem<dataset, Label>::labels;
@@ -180,6 +186,9 @@ namespace svm {
                 }
                 return dataset(v, 0, false);
             }
+
+            template <class OtherContainer, class OtherLabel>
+            friend class basic_problem;
         private:
             using basic_problem<Container, Label>::orig_data;
             using basic_problem<Container, Label>::labels;
