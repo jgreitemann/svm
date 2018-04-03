@@ -1,6 +1,6 @@
 /*   Support Vector Machine Library Wrappers
  *   Copyright (C) 2018  Jonas Greitemann
- *  
+ *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation, either version 3 of the License, or
@@ -22,19 +22,29 @@
 #include <stdexcept>
 
 #define SVM_LABEL_BEGIN(LABELNAME, LABELCOUNT)                          \
-namespace LABELNAME {                                                   \
-    const char * NAMES[3];                                              \
+    namespace LABELNAME {                                               \
+    const char * NAMES[(LABELCOUNT)];                                   \
+    double FLOAT_REPRS[(LABELCOUNT)];                                   \
     struct label {                                                      \
         static const size_t number_classes = (LABELCOUNT);              \
-        label (short val) : val (val) {}                                \
-        label (short val, const char * c_str) : val (val) {             \
+        static const size_t label_dim = 1;                              \
+        label (short val) : val(val) {}                                 \
+        label (short val, const char * c_str) : val(val) {              \
             NAMES[val] = c_str;                                         \
+            FLOAT_REPRS[val] = double(val);                             \
+        }                                                               \
+        template <class Iterator>                                       \
+        label (Iterator begin) : val (*begin + 0.5) {                   \
+            if (val < 0 || val >= number_classes)                       \
+                throw std::runtime_error("invalid label");              \
         }                                                               \
         label (double x) : val (x + 0.5) {                              \
             if (x < 0 || x >= number_classes)                           \
                 throw std::runtime_error("invalid label");              \
         }                                                               \
         operator double() const { return val; }                         \
+        double const * begin() const { return &FLOAT_REPRS[val]; }      \
+        double const * end() const { return &FLOAT_REPRS[val] + 1; }    \
         friend bool operator== (label lhs, label rhs) {                 \
             return lhs.val == rhs.val;                                  \
         }                                                               \
@@ -42,7 +52,7 @@ namespace LABELNAME {                                                   \
             os << NAMES[l.val];                                         \
         }                                                               \
     private:                                                            \
-        const short val;                                                \
+    const short val;                                                    \
     };                                                                  \
     short i = 0;
 
