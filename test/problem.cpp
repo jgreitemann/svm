@@ -64,7 +64,7 @@ TEST_CASE("problem-map-construct") {
         c.add_sample(C {3*i, 3*i+1, 3*i+2}, i);
     }
 
-    prob b(std::move(c), [] (int i) { return i; });
+    prob b(std::move(c), [] (int i) { return i % 3; });
 
     test_problems_equal(a, b);
     CHECK(c.size() == 0);
@@ -86,7 +86,7 @@ TEST_CASE("problem-map-append") {
         c.add_sample(C {3*i, 3*i+1, 3*i+2}, i);
     }
 
-    b.append_problem(std::move(c), [] (int i) { return i; });
+    b.append_problem(std::move(c), [] (int i) { return i % 3; });
 
     test_problems_equal(a, b);
     CHECK(c.size() == 0);
