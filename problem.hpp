@@ -167,7 +167,7 @@ namespace svm {
 
             template <class OtherProblem, typename UnaryFunction>
             precompute_kernel_problem(OtherProblem && other, UnaryFunction map)
-                : basic_problem<dataset, Label>(std::move(other), map), kernel(std::move(other.kernel)) {}
+                : basic_problem<Container, Label>(std::move(other), map), kernel(std::move(other.kernel)) {}
 
             template <typename = typename std::enable_if<std::is_default_constructible<Kernel>::value>::type>
             precompute_kernel_problem (size_t dim)
@@ -204,6 +204,9 @@ namespace svm {
 
             template <class OtherContainer, class OtherLabel>
             friend class basic_problem;
+
+            template <class OtherKernel, class OtherContainer, class OtherLabel>
+            friend class precompute_kernel_problem;
         private:
             using basic_problem<Container, Label>::orig_data;
             using basic_problem<Container, Label>::labels;
