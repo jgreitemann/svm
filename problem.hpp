@@ -40,6 +40,32 @@ namespace svm {
                                      && bool(std::is_convertible<double, Label>::value)
                                      > {};
 
+        template <class Label>
+        struct label_traits {
+            static const size_t label_dim = Label::label_dim;
+            static auto begin (Label const& l) {
+                return l.begin();
+            }
+            static auto end (Label const& l) {
+                return l.end();
+            }
+            template <class Iterator>
+            static Label from_iterator (Iterator begin) {
+                return Label(begin);
+            }
+        };
+
+        template <>
+        struct label_traits<double> {
+            static const size_t label_dim = 1;
+            static double const * begin (double const& l) { return &l; }
+            static double const* end (double const& l) { return &l + 1; }
+            template <class Iterator>
+            static double from_iterator (Iterator begin) {
+                return *begin;
+            }
+        };
+
         template <class Container, class Label>
         class basic_problem {
         public:
