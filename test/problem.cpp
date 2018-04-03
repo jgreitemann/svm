@@ -21,36 +21,15 @@
 #include "doctest.h"
 #include "svm-wrapper.hpp"
 #include "label.hpp"
+#include "test_problems_equal.hpp"
 
 #include <complex>
 #include <iostream>
 #include <random>
 #include <vector>
-#include <tuple>
 
 
 using svm::detail::basic_problem;
-
-template <class Container, class Label>
-void test_problems_equal(basic_problem<Container, Label> const& lhs,
-                         basic_problem<Container, Label> const& rhs)
-{
-    CHECK(lhs.dim() == rhs.dim());
-    CHECK(lhs.size() == rhs.size());
-    for (size_t i = 0; i < lhs.size(); ++i) {
-        Container xl, xr;
-        Label yl, yr;
-        std::tie(xl, yl) = lhs[i];
-        std::tie(xr, yr) = lhs[i];
-        CHECK(xl.size() == lhs.dim());
-        CHECK(xr.size() == rhs.dim());
-        auto it_l = xl.begin();
-        auto it_r = xr.begin();
-        for (; it_l < xl.end(); ++it_l, ++it_r)
-            CHECK(*it_l == *it_r);
-        CHECK(yl == yr);
-    }
-}
 
 TEST_CASE("problem-append") {
     using C = std::vector<int>;

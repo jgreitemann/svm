@@ -251,6 +251,11 @@ namespace svm {
         problem_serializer (Problem & prob, bool skip_samples = false)
             : prob_(prob), full(!skip_samples) {}
 
+        void save (std::string const& filename) const {
+            alps::hdf5::archive ar(filename, "w");
+            save(ar);
+        }
+
         void save (alps::hdf5::archive & ar) const {
             using input_t = typename Problem::input_container_type;
             using view_t = typename std::conditional<
@@ -273,6 +278,11 @@ namespace svm {
                 ar["orig_data"] << orig_data;
                 ar["labels"] << labels;
             }
+        }
+
+        void load (std::string const& filename) {
+            alps::hdf5::archive ar(filename, "r");
+            load(ar);
         }
 
         void load (alps::hdf5::archive & ar) const {

@@ -22,10 +22,18 @@
 #include "kernel/linear_precomputed.hpp"
 
 
-TEST_CASE("serializer-ascii-builtin") {
-    serializer_test<svm::kernel::linear, svm::ascii_tag>(4, 1000, 0.99, "ascii-builtin");
+TEST_CASE("model-serializer-ascii-builtin") {
+    model_serializer_test<svm::kernel::linear, svm::ascii_tag>(4, 1000, 0.99, "ascii-builtin");
 }
 
-TEST_CASE("serializer-ascii-precomputed") {
-    serializer_test<svm::kernel::linear_precomputed, svm::ascii_tag>(4, 1000, 0.99, "ascii-precomputed");
+TEST_CASE("model-serializer-ascii-precomputed") {
+    model_serializer_test<svm::kernel::linear_precomputed, svm::ascii_tag>(4, 1000, 0.99, "ascii-precomputed");
+}
+
+TEST_CASE("problem-serializer-ascii-builtin") {
+    problem_serializer_test<svm::kernel::linear, svm::ascii_tag>(4, 1000, "ascii-builtin");
+}
+
+TEST_CASE("problem-serializer-ascii-precomputed") {
+    problem_serializer_test<svm::kernel::linear_precomputed, svm::ascii_tag>(4, 1000, "ascii-precomputed");
 }

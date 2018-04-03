@@ -16,25 +16,29 @@
  *   repository's root directory, or see <http://www.gnu.org/licenses/>.
  */
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#pragma once
 
-#include "serialization_test.hpp"
-#include "kernel/linear_precomputed.hpp"
-#include "hdf5_serialization.hpp"
+#include "doctest.h"
+#include "svm-wrapper.hpp"
 
 
-TEST_CASE("model-serializer-hdf5-builtin") {
-    model_serializer_test<svm::kernel::linear, svm::hdf5_tag>(4, 1000, 0.99, "hdf5-builtin-model.h5");
-}
+using svm::detail::basic_problem;
 
-TEST_CASE("model-serializer-hdf5-precomputed") {
-    model_serializer_test<svm::kernel::linear_precomputed, svm::hdf5_tag>(4, 1000, 0.99, "hdf5-precomputed-model.h5");
-}
-
-TEST_CASE("problem-serializer-hdf5-builtin") {
-    problem_serializer_test<svm::kernel::linear, svm::hdf5_tag>(4, 1000, "hdf5-builtin-problem.h5");
-}
-
-TEST_CASE("problem-serializer-hdf5-precomputed") {
-    problem_serializer_test<svm::kernel::linear_precomputed, svm::hdf5_tag>(4, 1000, "hdf5-precomputed-problem.h5");
+template <class Container, class Label>
+void test_problems_equal(basic_problem<Container, Label> const& lhs,
+                         basic_problem<Container, Label> const& rhs)
+{
+    CHECK(lhs.dim() == rhs.dim());
+    CHECK(lhs.size() == rhs.size());
+    for (size_t i = 0; i < lhs.size(); ++i) {
+        Container const& xl = lhs[i].first, xr = rhs[i].first;
+        Label yl = lhs[i].second, yr = rhs[i].second;
+        auto it_l = xl.begin();
+        auto it_r = xr.begin();
+        for (size_t j = 0; j < lhs.dim(); ++j, ++it_l, ++it_r)
+            CHECK(*it_l == *it_r);
+        CHECK(it_l == xl.end());
+        CHECK(it_r == xr.end());
+        CHECK(yl == yr);
+    }
 }
