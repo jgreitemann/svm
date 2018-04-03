@@ -36,7 +36,7 @@ void test_problems_equal(basic_problem<Container, Label> const& lhs,
         auto it_l = xl.begin();
         auto it_r = xr.begin();
         for (size_t j = 0; j < lhs.dim(); ++j, ++it_l, ++it_r)
-            CHECK(*it_l == *it_r);
+            CHECK(*it_l == doctest::Approx(*it_r));
         CHECK(it_l == xl.end());
         CHECK(it_r == xr.end());
         CHECK(yl == yr);

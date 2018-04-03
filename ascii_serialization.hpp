@@ -74,6 +74,8 @@ namespace svm {
 
         void save (std::string const& filename) const {
             using input_t = typename Problem::input_container_type;
+            using label_t = typename Problem::label_type;
+            using ltraits = typename::svm::detail::label_traits<label_t>;
             using view_t = typename std::conditional<
                 std::is_same<svm::dataset, input_t>::value,
                 svm::data_view, input_t const&>::type;
@@ -85,8 +87,12 @@ namespace svm {
                 for (size_t i = 0; i < prob_.size(); ++i) {
                     auto p = prob_[i];
                     view_t xs = p.first;
+                    label_t const& l = p.second;
+                    for (auto it = ltraits::begin(l); it != ltraits::end(l); ++it) {
+                        os << *it << ' ';
+                    }
+                    os << '\t';
                     size_t j = 0;
-                    os << p.second;
                     for (double const& x : xs) {
                         os << ' ' << x;
                         ++j;
@@ -100,6 +106,8 @@ namespace svm {
 
         void load (std::string const& filename) const {
             using input_t = typename Problem::input_container_type;
+            using label_t = typename Problem::label_type;
+            using ltraits = typename::svm::detail::label_traits<label_t>;
 
             std::ifstream is(filename);
 
@@ -108,15 +116,21 @@ namespace svm {
             Problem prob(dim);
 
             if (full) {
-                double y;
+                double ys[ltraits::label_dim];
                 std::vector<double> xs(dim);
-                while (is >> y) {
+                while (is >> ys[0]) {
+                    for (size_t j = 1; j < ltraits::label_dim; ++j) {
+                        if (!(is >> ys[j])) {
+                            throw std::runtime_error("incomplete problem");
+                        }
+                    }
                     for (size_t j = 0; j < dim; ++j) {
                         if (!(is >> xs[j])) {
                             throw std::runtime_error("incomplete problem");
                         }
                     }
-                    prob.add_sample(input_t(xs.begin(), xs.end()), y);
+                    prob.add_sample(input_t(xs.begin(), xs.end()),
+                                    ltraits::from_iterator(std::begin(ys)));
                 }
             }
             prob_ = std::move(prob);

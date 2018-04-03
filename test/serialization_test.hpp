@@ -63,7 +63,8 @@ struct custom_label {
     double const * begin() const { return xs; }
     double const * end() const { return xs + 2; }
     friend bool operator== (custom_label lhs, custom_label rhs) {
-        return lhs.xs[0] == rhs.xs[0] && lhs.xs[1] == rhs.xs[1];
+        return lhs.xs[0] == doctest::Approx(rhs.xs[0])
+            && lhs.xs[1] == doctest::Approx(rhs.xs[1]);
     }
 private:
     double xs[2];
