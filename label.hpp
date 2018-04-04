@@ -23,8 +23,8 @@
 
 #define SVM_LABEL_BEGIN(LABELNAME, LABELCOUNT)                          \
     namespace LABELNAME {                                               \
-    const char * NAMES[(LABELCOUNT)];                                   \
-    double FLOAT_REPRS[(LABELCOUNT)];                                   \
+    static const char * NAMES[(LABELCOUNT)];                            \
+    static double FLOAT_REPRS[(LABELCOUNT)];                            \
     struct label {                                                      \
         static const size_t number_classes = (LABELCOUNT);              \
         static const size_t label_dim = 1;                              \
@@ -54,9 +54,9 @@
     private:                                                            \
     const short val;                                                    \
     };                                                                  \
-    short i = 0;
+    static short i = 0;
 
-#define SVM_LABEL_ADD(OPTIONNAME)                   \
-    const label OPTIONNAME { i++, #OPTIONNAME };
+#define SVM_LABEL_ADD(OPTIONNAME)                       \
+    static const label OPTIONNAME { i++, #OPTIONNAME };
 
 #define SVM_LABEL_END() }
