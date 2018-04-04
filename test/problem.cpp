@@ -122,6 +122,8 @@ TEST_CASE("problem-map-binary-classification") {
     svm::problem<kernel_t, binary_class::label> mapped_problem(std::move(prob), classifier);
 
     using model_t = svm::model<kernel_t, binary_class::label>;
+    size_t nr_classes = model_t::nr_classes;
+    CHECK(nr_classes == 2);
     model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
     double succ = 0.;
     double dec;
@@ -170,6 +172,9 @@ TEST_CASE("problem-map-ternary-classification") {
     svm::problem<kernel_t, ternary_class::label> mapped_problem(std::move(prob), classifier);
 
     using model_t = svm::model<kernel_t, ternary_class::label>;
+    size_t nr_classes = model_t::nr_classes;
+    CHECK(nr_classes == 3);
+
     model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
     double succ = 0.;
     double dec;

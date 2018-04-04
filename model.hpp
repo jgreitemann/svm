@@ -40,6 +40,8 @@ namespace svm {
         typedef typename problem_t::input_container_type input_container_type;
         typedef Label label_type;
 
+        static const size_t nr_classes = detail::label_traits<Label>::nr_classes;
+
         class const_iterator {
         public:
             const_iterator & operator++ () {
