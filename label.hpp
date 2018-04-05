@@ -26,8 +26,9 @@
     static const char * NAMES[(LABELCOUNT)];                            \
     static double FLOAT_REPRS[(LABELCOUNT)];                            \
     struct label {                                                      \
-        static const size_t nr_classes = (LABELCOUNT);                  \
+        static const size_t nr_labels = (LABELCOUNT);                   \
         static const size_t label_dim = 1;                              \
+        label () : val(FLOAT_REPRS[0] + 0.5) {}                         \
         label (short val) : val(val) {}                                 \
         label (short val, const char * c_str) : val(val) {              \
             NAMES[val] = c_str;                                         \
@@ -35,11 +36,11 @@
         }                                                               \
         template <class Iterator>                                       \
         label (Iterator begin) : val (*begin + 0.5) {                   \
-            if (val < 0 || val >= nr_classes)                           \
+            if (val < 0 || val >= nr_labels)                            \
                 throw std::runtime_error("invalid label");              \
         }                                                               \
         label (double x) : val (x + 0.5) {                              \
-            if (x < 0 || x >= nr_classes)                               \
+            if (x < 0 || x >= nr_labels)                                \
                 throw std::runtime_error("invalid label");              \
         }                                                               \
         operator double() const { return val; }                         \

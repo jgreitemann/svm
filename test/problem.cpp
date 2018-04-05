@@ -123,9 +123,9 @@ TEST_CASE("problem-map-binary-classification") {
     svm::problem<kernel_t, binary_class::label> mapped_problem(std::move(prob), classifier);
 
     using model_t = svm::model<kernel_t, binary_class::label>;
-    size_t nr_classes = model_t::nr_classes;
+    size_t nr_labels = model_t::nr_labels;
     size_t nr_classifiers = model_t::nr_classifiers;
-    CHECK(nr_classes == 2);
+    CHECK(nr_labels == 2);
     CHECK(nr_classifiers == 1);
     static_assert(std::is_same<typename model_t::decision_type, double>::value,
                   "wrong decision type for binary classification");
@@ -176,9 +176,9 @@ TEST_CASE("problem-map-ternary-classification") {
     svm::problem<kernel_t, ternary_class::label> mapped_problem(std::move(prob), classifier);
 
     using model_t = svm::model<kernel_t, ternary_class::label>;
-    size_t nr_classes = model_t::nr_classes;
+    size_t nr_labels = model_t::nr_labels;
     size_t nr_classifiers = model_t::nr_classifiers;
-    CHECK(nr_classes == 3);
+    CHECK(nr_labels == 3);
     CHECK(nr_classifiers == 3);
     static_assert(std::is_same<typename model_t::decision_type, std::array<double,3>>::value,
                   "wrong decision type for binary classification");

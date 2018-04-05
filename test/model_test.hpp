@@ -78,8 +78,8 @@ void model_test (size_t M, double threshold, TrialModel const& trial_model, RNG_
     using model_t = svm::model<Kernel>;
     svm::parameters<Kernel> params(nu);
 
-    size_t nr_classes = model_t::nr_classes;
-    CHECK(nr_classes == 2);
+    size_t nr_labels = model_t::nr_labels;
+    CHECK(nr_labels == 2);
 
     model_t empirical_model(
         fill_problem<svm::problem<Kernel>>(M, rng, trial_model),

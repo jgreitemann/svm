@@ -40,13 +40,17 @@ namespace svm {
         typedef parameters<Kernel> parameters_t;
         typedef typename problem_t::input_container_type input_container_type;
         typedef Label label_type;
+        typedef std::pair<Label, Label> classifier_type;
 
-        static const size_t nr_classes = detail::label_traits<Label>::nr_classes;
-        static const size_t nr_classifiers = nr_classes * (nr_classes - 1) / 2;
+        static const size_t nr_labels = detail::label_traits<Label>::nr_labels;
+        static const size_t nr_classifiers = nr_labels * (nr_labels - 1) / 2;
 
         using decision_type = std::conditional_t<nr_classifiers == 1,
                                                  double,
                                                  std::array<double, nr_classifiers>>;
+
+        using label_arr_t = std::array<label_type, nr_labels>;
+        using classifier_arr_t = std::array<classifier_type, nr_classifiers>;
 
         class const_iterator {
         public:
@@ -123,6 +127,8 @@ namespace svm {
             m = svm_train(&svm_prob, params_.svm_params_ptr());
             if (std::isnan(rho()))
                 throw std::runtime_error("SVM returned NaN. Specified nu is infeasible.");
+            if (m->nr_class != nr_labels)
+                throw std::runtime_error("inconsistent number of label values");
         }
 
         model (model const&) = delete;
@@ -149,6 +155,21 @@ namespace svm {
         ~model () noexcept {
             if (m)
                 svm_free_and_destroy_model(&m); // WTF
+        }
+
+        label_arr_t labels () const {
+            label_arr_t ret;
+            std::copy(m->label, m->label + nr_labels, ret);
+            return ret;
+        }
+
+        classifier_arr_t classifiers () const {
+            auto ls = labels();
+            classifier_arr_t ret;
+            auto it = ret.begin();
+            for (auto l1 = ls.begin(); l1 != ls.end(); ++l1)
+                for (auto l2 = l1; l2 != ls.end(); ++l2, ++it)
+                    *it = classifier_type(*l1, *l2);
         }
 
         template <typename Problem = problem_t,

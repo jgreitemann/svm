@@ -43,7 +43,7 @@ namespace svm {
         template <class Label>
         struct label_traits {
             static const size_t label_dim = Label::label_dim;
-            static const size_t nr_classes = Label::nr_classes;
+            static const size_t nr_labels = Label::nr_labels;
             static auto begin (Label const& l) {
                 return l.begin();
             }
@@ -59,7 +59,7 @@ namespace svm {
         template <>
         struct label_traits<double> {
             static const size_t label_dim = 1;
-            static const size_t nr_classes = 2;
+            static const size_t nr_labels = 2;
             static double const * begin (double const& l) { return &l; }
             static double const* end (double const& l) { return &l + 1; }
             template <class Iterator>
