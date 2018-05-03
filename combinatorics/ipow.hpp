@@ -30,7 +30,7 @@ namespace combinatorics {
     Base_t ipow (Base_t base, Exp_t exp) {
         if (exp < 0) {
             if (std::is_integral<Base_t>::value) {
-                std::domain_error("negative exponent in exponentiation of integral base");
+                throw std::domain_error("negative exponent in exponentiation of integral base");
             } else {
                 exp *= -1;
                 base = 1 / base;
