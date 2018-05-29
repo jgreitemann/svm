@@ -1,5 +1,3 @@
-include_directories(..)
-include_directories(../libsvm)
 include_directories(doctest)
 
 add_executable(combinatorics combinatorics.cpp)
@@ -30,9 +28,11 @@ target_link_libraries(circle svm)
 add_test(circle circle)
 
 add_executable(dot dot.cpp)
+target_link_libraries(dot svm)
 add_test(dot dot)
 
 add_executable(data_view data_view.cpp)
+target_link_libraries(data_view svm)
 add_test(data_view data_view)
 
 add_executable(poly-introspect poly_introspect.cpp)
