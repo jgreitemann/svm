@@ -117,7 +117,7 @@ namespace svm {
         int start_index;
     };
 
-    double dot (data_view lhs, data_view rhs) {
+    inline double dot (data_view lhs, data_view rhs) {
         return lhs.dot(rhs);
     }
 
@@ -185,7 +185,7 @@ namespace svm {
         int start_index;
     };
 
-    data_view::data_view (dataset const& ds) {
+    inline data_view::data_view (dataset const& ds) {
         *this = ds.view();
     }
 
