@@ -24,6 +24,7 @@
 #include "serializer.hpp"
 #include "svm.h"
 
+#include <array>
 #include <cmath>
 #include <stdexcept>
 #include <type_traits>
@@ -41,6 +42,11 @@ namespace svm {
         typedef Label label_type;
 
         static const size_t nr_classes = detail::label_traits<Label>::nr_classes;
+        static const size_t nr_classifiers = nr_classes * (nr_classes - 1) / 2;
+
+        using decision_type = std::conditional_t<nr_classifiers == 1,
+                                                 double,
+                                                 std::array<double, nr_classifiers>>;
 
         class const_iterator {
         public:
@@ -68,12 +74,15 @@ namespace svm {
                 return *yalpha;
             }
 
-            template <typename Problem = problem_t, typename = typename std::enable_if<!Problem::is_precomputed>::type>
+            template <typename Problem = problem_t,
+                      typename = std::enable_if_t<!Problem::is_precomputed>>
             data_view support_vec () const {
                 return data_view(*sv);
             }
 
-            template <typename Problem = problem_t, typename = typename std::enable_if<Problem::is_precomputed>::type, bool dummy = false>
+            template <typename Problem = problem_t,
+                      typename = std::enable_if_t<Problem::is_precomputed>,
+                      bool dummy = false>
             input_container_type const& support_vec () const {
                 data_view permutation_index(*sv, 0);
                 return prob[permutation_index.front()-1].first;
@@ -142,18 +151,21 @@ namespace svm {
                 svm_free_and_destroy_model(&m); // WTF
         }
 
-        template <typename Problem = problem_t, typename = typename std::enable_if<!Problem::is_precomputed>::type>
-        std::pair<Label, double> operator() (input_container_type const& xj) {
-            double dec;
-            Label label(svm_predict_values(m, xj.ptr(), &dec));
+        template <typename Problem = problem_t,
+                  typename = std::enable_if_t<!Problem::is_precomputed>>
+        std::pair<Label, decision_type> operator() (input_container_type const& xj) {
+            decision_type dec;
+            Label label(svm_predict_values(m, xj.ptr(), reinterpret_cast<double*>(&dec)));
             return std::make_pair(label, dec);
         }
 
-        template <typename Problem = problem_t, typename = typename std::enable_if<Problem::is_precomputed>::type, bool dummy = false>
-        std::pair<Label, double> operator() (input_container_type const& xj) {
+        template <typename Problem = problem_t,
+                  typename = std::enable_if_t<Problem::is_precomputed>,
+                  bool dummy = false>
+        std::pair<Label, decision_type> operator() (input_container_type const& xj) {
             dataset kernelized = prob.kernelize(xj);
-            double dec;
-            Label label(svm_predict_values(m, kernelized.ptr(), &dec));
+            decision_type dec;
+            Label label(svm_predict_values(m, kernelized.ptr(), reinterpret_cast<double*>(&dec)));
             return std::make_pair(label, dec);
         }
 

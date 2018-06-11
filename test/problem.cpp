@@ -26,6 +26,7 @@
 #include <complex>
 #include <iostream>
 #include <random>
+#include <type_traits>
 #include <vector>
 
 
@@ -123,10 +124,13 @@ TEST_CASE("problem-map-binary-classification") {
 
     using model_t = svm::model<kernel_t, binary_class::label>;
     size_t nr_classes = model_t::nr_classes;
+    size_t nr_classifiers = model_t::nr_classifiers;
     CHECK(nr_classes == 2);
+    CHECK(nr_classifiers == 1);
+    static_assert(std::is_same<typename model_t::decision_type, double>::value,
+                  "wrong decision type for binary classification");
     model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
     double succ = 0.;
-    double dec;
     for (size_t i = 0; i < M; ++i) {
         cmplx c {uniform(rng), uniform(rng)};
         auto label = model(C {c.real(), c.imag()}).first;
@@ -173,14 +177,20 @@ TEST_CASE("problem-map-ternary-classification") {
 
     using model_t = svm::model<kernel_t, ternary_class::label>;
     size_t nr_classes = model_t::nr_classes;
+    size_t nr_classifiers = model_t::nr_classifiers;
     CHECK(nr_classes == 3);
+    CHECK(nr_classifiers == 3);
+    static_assert(std::is_same<typename model_t::decision_type, std::array<double,3>>::value,
+                  "wrong decision type for binary classification");
 
     model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
     double succ = 0.;
-    double dec;
     for (size_t i = 0; i < M; ++i) {
         cmplx c {uniform(rng), uniform(rng)};
-        auto label = model(C {c.real(), c.imag()}).first;
+        auto res = model(C {c.real(), c.imag()});
+        auto label = res.first;
+        auto dec = res.second;
+        CHECK(std::distance(dec.begin(), dec.end()) == nr_classifiers);
         if (classifier(c) == label)
             succ += 1.;
     }
