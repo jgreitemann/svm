@@ -49,7 +49,7 @@
             return lhs.val == rhs.val;                                  \
         }                                                               \
         friend std::ostream & operator<< (std::ostream & os, label l) { \
-            os << NAMES[l.val];                                         \
+            return os << NAMES[l.val];                                  \
         }                                                               \
     private:                                                            \
     const short val;                                                    \
