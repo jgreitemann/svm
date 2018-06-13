@@ -24,6 +24,7 @@
 #include "serializer.hpp"
 #include "svm.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <stdexcept>
@@ -51,6 +52,7 @@ namespace svm {
                                                            input_container_type const&,
                                                            data_view>;
                 using value_type = std::pair<double, support_vec_type>;
+                using difference_type = size_t;
                 using reference = std::pair<double const&, support_vec_ref> const;
                 using pointer = std::pair<double, support_vec_ref> const *;
                 using iterator_category = std::bidirectional_iterator_tag;
@@ -143,6 +145,7 @@ namespace svm {
                         k2_offset = sum;
                     sum += parent.m->nSV[k];
                 }
+                k_comb = k1 * (nr_labels - 1) - k1 * (k1 - 1) / 2 + k2 - k1 - 1;
             }
 
             const_iterator begin () const {
@@ -169,9 +172,30 @@ namespace svm {
                 };
             }
 
+            template <typename..., size_t NC = model::nr_classifiers,
+                      typename = std::enable_if_t<NC == 1>>
+            std::pair<Label, double> operator() (input_container_type const& xj) {
+                return model(xj);
+            }
+
+            template <typename..., size_t NC = model::nr_classifiers,
+                      typename = std::enable_if_t<(NC > 1)>, bool dummy = false>
+            std::pair<Label, double> operator() (input_container_type const& xj) {
+                auto p = model(xj);
+                return std::make_pair(p.first, p.second[k_comb]);
+            }
+
+            double rho () const {
+                return parent.m->rho[k_comb];
+            }
+
+            parameters_t const& params () const {
+                return parent.params();
+            }
+
         private:
             size_t k1, k2;
-            size_t k1_offset, k2_offset;
+            size_t k1_offset, k2_offset, k_comb;
             model const& parent;
         };
 
@@ -201,7 +225,8 @@ namespace svm {
                 throw std::runtime_error(err_str);
             }
             m = svm_train(&svm_prob, params_.svm_params_ptr());
-            if (std::isnan(rho()))
+            if (std::any_of(m->rho, m->rho + nr_classifiers,
+                            [] (double r) { return std::isnan(r); }))
                 throw std::runtime_error("SVM returned NaN. Specified nu is infeasible.");
             if (m->nr_class != nr_labels)
                 throw std::runtime_error("inconsistent number of label values");
@@ -284,10 +309,6 @@ namespace svm {
             decision_type dec;
             Label label(svm_predict_values(m, kernelized.ptr(), reinterpret_cast<double*>(&dec)));
             return std::make_pair(label, dec);
-        }
-
-        double rho () const {
-            return m->rho[0];
         }
 
         nSV_type nSV () const {
