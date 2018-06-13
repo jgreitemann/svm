@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <type_traits>
 
 #define SVM_LABEL_BEGIN(LABELNAME, LABELCOUNT)                          \
     namespace LABELNAME {                                               \
@@ -29,12 +30,13 @@
         static const size_t nr_labels = (LABELCOUNT);                   \
         static const size_t label_dim = 1;                              \
         label () : val(FLOAT_REPRS[0] + 0.5) {}                         \
-        label (short val) : val(val) {}                                 \
-        label (short val, const char * c_str) : val(val) {              \
+        label (int val) : val(val) {}                                   \
+        label (int val, const char * c_str) : val(val) {                \
             NAMES[val] = c_str;                                         \
             FLOAT_REPRS[val] = double(val);                             \
         }                                                               \
-        template <class Iterator>                                       \
+        template <class Iterator,                                       \
+                  typename Tag = typename std::iterator_traits<Iterator>::value_type> \
         label (Iterator begin) : val (*begin + 0.5) {                   \
             if (val < 0 || val >= nr_labels)                            \
                 throw std::runtime_error("invalid label");              \
@@ -53,7 +55,7 @@
             return os << NAMES[l.val];                                  \
         }                                                               \
     private:                                                            \
-    const short val;                                                    \
+        short val;                                                      \
     };                                                                  \
     static short i = 0;
 
