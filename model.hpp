@@ -262,6 +262,12 @@ namespace svm {
             return classifier_type {*this, k1, k2};
         }
 
+        template <typename..., size_t NC = nr_classifiers,
+                  typename = std::enable_if_t<NC == 1>>
+        classifier_type classifier () const {
+            return classifier_type {*this, 0, 1};
+        }
+
         template <typename Problem = problem_t,
                   typename = std::enable_if_t<!Problem::is_precomputed>>
         std::pair<Label, decision_type> operator() (input_container_type const& xj) {
@@ -278,18 +284,6 @@ namespace svm {
             decision_type dec;
             Label label(svm_predict_values(m, kernelized.ptr(), reinterpret_cast<double*>(&dec)));
             return std::make_pair(label, dec);
-        }
-
-        template <typename..., size_t NC = nr_classifiers,
-                  typename = std::enable_if_t<NC == 1>>
-        typename classifier_type::const_iterator begin () const {
-            return classifier_type {*this, 0, 1}.begin();
-        }
-
-        template <typename..., size_t NC = nr_classifiers,
-                  typename = std::enable_if_t<NC == 1>>
-        typename classifier_type::const_iterator end () const {
-            return classifier_type {*this, 0, 1}.end();
         }
 
         double rho () const {
