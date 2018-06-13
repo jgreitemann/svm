@@ -181,7 +181,7 @@ TEST_CASE("problem-map-ternary-classification") {
     CHECK(nr_labels == 3);
     CHECK(nr_classifiers == 3);
     static_assert(std::is_same<typename model_t::decision_type, std::array<double,3>>::value,
-                  "wrong decision type for binary classification");
+                  "wrong decision type for ternary classification");
 
     model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
     double succ = 0.;
