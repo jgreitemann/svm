@@ -235,7 +235,7 @@ namespace svm {
 
         label_arr_t labels () const {
             label_arr_t ret;
-            std::copy(m->label, m->label + nr_labels, ret);
+            std::copy(m->label, m->label + nr_labels, ret.begin());
             return ret;
         }
 
