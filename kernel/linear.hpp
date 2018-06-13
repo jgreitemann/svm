@@ -55,15 +55,14 @@ namespace svm {
         }
     };
 
-    template <class Kernel>
+    template <class Classifier>
     struct linear_introspector {
-        using model_t = model<Kernel>;
 
-        linear_introspector(model_t const& model) : model_(model) {}
+        linear_introspector(Classifier const& cl) : classifier(cl) {}
         
         double coefficient(size_t i) const {
             double c = 0;
-            for (auto p : model_) {
+            for (auto p : classifier) {
                 double yalpha = p.first;
                 auto const& x = p.second;
                 auto itX = x.begin();
@@ -73,8 +72,17 @@ namespace svm {
             return c;
         }
 
+        double right_hand_side() const {
+            return classifier.rho();
+        }
+
     private:
-        model_t const& model_;
+        Classifier classifier;
     };
+
+    template <class Classifier>
+    linear_introspector<Classifier> linear_introspect (Classifier const& cl) {
+        return linear_introspector<Classifier> {cl};
+    }
 
 }

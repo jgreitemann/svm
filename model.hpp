@@ -37,12 +37,15 @@ namespace svm {
     template <class Kernel, class Label = double>
     class model {
     public:
+        typedef Kernel kernel_type;
         typedef problem<Kernel, Label> problem_t;
         typedef parameters<Kernel> parameters_t;
         typedef typename problem_t::input_container_type input_container_type;
         typedef Label label_type;
 
         struct classifier_type {
+
+            using kernel_type = model::kernel_type;
 
             struct const_iterator {
                 using support_vec_type = std::conditional_t<problem_t::is_precomputed,

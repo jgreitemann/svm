@@ -70,18 +70,16 @@ namespace svm {
     };
 
 
-    template <class Kernel, size_t K, size_t D = Kernel::Degree>
+    template <class Classifier, size_t K, size_t D = Classifier::kernel_type::Degree>
     struct tensor_introspector {
         static_assert(K <= D, "invalid tensor rank");
 
-        using poly_model = model<Kernel>;
-
-        tensor_introspector (poly_model const& model)
-            : model_(model), N(model.dim())
+        tensor_introspector (Classifier const& cl)
+            : classifier(cl)
         {
             using namespace combinatorics;
-            fac = binomial(D, K) * ipow(model.params().gamma(), K)
-                * ipow(model.params().coef0(), D-K);
+            fac = binomial(D, K) * ipow(classifier.params().gamma(), K)
+                * ipow(classifier.params().coef0(), D-K);
         }
 
         template <size_t L=K, typename = typename std::enable_if<L != 0>::type>
@@ -90,7 +88,7 @@ namespace svm {
             double yalpha;
             data_view x;
             double sum = 0;
-            for (auto p : model_) {
+            for (auto p : classifier) {
                 std::tie(yalpha, x) = std::move(p);
                 double prod = 1.;
                 size_t j = 0;
@@ -107,12 +105,16 @@ namespace svm {
 
         template <size_t L=K, typename = typename std::enable_if<L == 0>::type>
         double tensor () const {
-            return fac;
+            return fac - classifier.rho();
         }
     private:
-        poly_model const& model_;
-        size_t const N;
+        Classifier classifier;
         double fac;
     };
+
+    template <size_t K, class Classifier>
+    tensor_introspector<Classifier, K> tensor_introspect (Classifier const& cl) {
+        return tensor_introspector<Classifier, K> {cl};
+    }
 
 }
