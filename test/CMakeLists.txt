@@ -43,6 +43,10 @@ add_executable(poly-introspect poly_introspect.cpp)
 target_link_libraries(poly-introspect svm)
 add_test(poly-introspect poly-introspect)
 
+add_executable(multi-introspect multi_introspect.cpp)
+target_link_libraries(multi-introspect svm)
+add_test(multi-introspect multi-introspect)
+
 add_executable(ascii-serialization ascii_serialization.cpp)
 target_link_libraries(ascii-serialization svm)
 add_test(ascii-serialization ascii-serialization)
