@@ -314,14 +314,18 @@ namespace svm {
             return std::make_pair(label, dec);
         }
 
+        template <typename..., size_t NL = nr_labels,
+                  typename = typename std::enable_if_t<NL == 2>>
         nSV_type nSV () const {
-            if (nr_labels == 2) {
-                return {m->nSV[0], m->nSV[1]};
-            } else {
-                nSV_type n;
-                std::copy(m->nSV, m->nSV + nr_labels, n.begin());
-                return n;
-            }
+            return {m->nSV[0], m->nSV[1]};
+        }
+
+        template <typename..., size_t NL = nr_labels,
+                  typename = typename std::enable_if_t<(NL > 2)>, bool dummy = false>
+        nSV_type nSV () const {
+            nSV_type n;
+            std::copy(m->nSV, m->nSV + nr_labels, n.begin());
+            return n;
         }
 
         size_t dim () const {
