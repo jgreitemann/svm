@@ -213,7 +213,7 @@ namespace svm {
                                             std::pair<size_t, size_t>,
                                             std::array<size_t, nr_labels>>;
         using label_arr_t = std::array<label_type, nr_labels>;
-        using classifier_arr_t = std::array<classifier_type, nr_classifiers>;
+        using classifier_arr_t = std::vector<classifier_type>;
 
         model () : prob(0), m(nullptr) {}
 
@@ -273,9 +273,10 @@ namespace svm {
             auto it = ret.begin();
             for (size_t k1 = 0; k1 < nr_labels - 1; ++k1) {
                 for (size_t k2 = k1 + 1; k2 < nr_labels; ++k2, ++it) {
-                    *it = classifier_type(*this, k1, k2);
+                    ret.emplace_back(*this, k1, k2);
                 }
             }
+            return ret;
         }
 
         classifier_type classifier (Label l1, Label l2) const {
