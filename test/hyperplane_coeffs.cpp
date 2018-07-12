@@ -41,7 +41,7 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
         fill_problem<svm::problem<Kernel>>(M, rng, trial_model),
         params);
     using input_t = typename svm::model<Kernel>::input_container_type;
-    svm::linear_introspector<Kernel> introspector(empirical_model);
+    auto introspector = linear_introspect(empirical_model.classifier());
 
     std::vector<double> empirical_C(N);
     for (size_t i = 0; i < N; ++i)
@@ -66,7 +66,7 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
             d_calc += *itC * x;
             ++itC;
         }
-        d_calc -= empirical_model.rho();
+        d_calc -= introspector.right_hand_side();
         std::tie(std::ignore, d_pred) = empirical_model(input_t(std::move(xs)));
         CHECK(d_calc == doctest::Approx(d_pred));
     }

@@ -251,8 +251,15 @@ namespace svm {
         problem_serializer (Problem & prob, bool skip_samples = false)
             : prob_(prob), full(!skip_samples) {}
 
+        void save (std::string const& filename) const {
+            alps::hdf5::archive ar(filename, "w");
+            save(ar);
+        }
+
         void save (alps::hdf5::archive & ar) const {
             using input_t = typename Problem::input_container_type;
+            using label_t = typename Problem::label_type;
+            using ltraits = typename::svm::detail::label_traits<label_t>;
             using view_t = typename std::conditional<
                 std::is_same<svm::dataset, input_t>::value,
                 svm::data_view, input_t const&>::type;
@@ -261,13 +268,14 @@ namespace svm {
 
             if (full) {
                 boost::multi_array<double, 2> orig_data(boost::extents[prob_.size()][prob_.dim()]);
-                std::vector<double> labels(prob_.size());
+                boost::multi_array<double, 2> labels(boost::extents[prob_.size()][ltraits::label_dim]);
 
                 for (size_t i = 0; i < prob_.size(); ++i) {
                     auto p = prob_[i];
                     view_t xs = p.first;
+                    label_t const& l = p.second;
                     std::copy(xs.begin(), xs.end(), orig_data[i].begin());
-                    labels[i] = p.second;
+                    std::copy(ltraits::begin(l), ltraits::end(l), labels[i].begin());
                 }
 
                 ar["orig_data"] << orig_data;
@@ -275,8 +283,15 @@ namespace svm {
             }
         }
 
+        void load (std::string const& filename) {
+            alps::hdf5::archive ar(filename, "r");
+            load(ar);
+        }
+
         void load (alps::hdf5::archive & ar) const {
             using input_t = typename Problem::input_container_type;
+            using label_t = typename Problem::label_type;
+            using ltraits = typename::svm::detail::label_traits<label_t>;
 
             size_t dim;
             ar["dim"] >> dim;
@@ -284,19 +299,21 @@ namespace svm {
 
             if (full) {
                 boost::multi_array<double, 2> orig_data;
-                std::vector<double> labels;
+                boost::multi_array<double, 2> labels;
                 ar["orig_data"] >> orig_data;
                 ar["labels"] >> labels;
 
-                if (orig_data.shape()[0] != labels.size())
+                if (orig_data.shape()[0] != labels.shape()[0])
                     throw std::runtime_error("inconsistent data length");
                 if (orig_data.shape()[1] != dim)
-                    throw std::runtime_error("inconsistent data length");
+                    throw std::runtime_error("inconsistent data dimension");
+                if (labels.shape()[1] != ltraits::label_dim)
+                    throw std::runtime_error("inconsistent label dimension");
 
-                for (size_t i = 0; i < labels.size(); ++i)
+                for (size_t i = 0; i < labels.shape()[0]; ++i)
                     prob.add_sample(input_t(orig_data[i].begin(),
                                             orig_data[i].end()),
-                                    labels[i]);
+                                    ltraits::from_iterator(labels[i].begin()));
             }
 
             prob_ = std::move(prob);

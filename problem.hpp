@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -32,10 +33,46 @@ namespace svm {
 
     namespace detail {
 
-        template <class Container>
+        template <class Label>
+        struct is_convertible_label
+            : std::integral_constant<bool,
+                                     bool(std::is_convertible<Label, double>::value)
+                                     && bool(std::is_convertible<double, Label>::value)
+                                     > {};
+
+        template <class Label>
+        struct label_traits {
+            static const size_t label_dim = Label::label_dim;
+            static const size_t nr_labels = Label::nr_labels;
+            static auto begin (Label const& l) {
+                return l.begin();
+            }
+            static auto end (Label const& l) {
+                return l.end();
+            }
+            template <class Iterator>
+            static Label from_iterator (Iterator begin) {
+                return Label(begin);
+            }
+        };
+
+        template <>
+        struct label_traits<double> {
+            static const size_t label_dim = 1;
+            static const size_t nr_labels = 2;
+            static double const * begin (double const& l) { return &l; }
+            static double const* end (double const& l) { return &l + 1; }
+            template <class Iterator>
+            static double from_iterator (Iterator begin) {
+                return *begin;
+            }
+        };
+
+        template <class Container, class Label>
         class basic_problem {
         public:
             typedef Container input_container_type;
+            typedef Label label_type;
 
             basic_problem(size_t dim) : dimension(dim) {};
             basic_problem(basic_problem const&) = delete;
@@ -43,30 +80,47 @@ namespace svm {
             basic_problem(basic_problem &&) = default;
             basic_problem & operator= (basic_problem &&) = default;
 
-            void add_sample(Container && ds, double label) {
+            template <class OtherProblem, typename UnaryFunction>
+            basic_problem(OtherProblem && other, UnaryFunction label_map) {
+                dimension = other.dimension;
+                append_problem(std::move(other), label_map);
+            }
+
+            void add_sample(Container && ds, Label label) {
                 orig_data.push_back(std::move(ds));
                 labels.push_back(label);
             }
 
-            void add_sample(Container const& ds, double label) {
+            void add_sample(Container const& ds, Label label) {
                 orig_data.push_back(ds);
                 labels.push_back(label);
             }
 
-            void append_problem (basic_problem && other) {
+            template <class OtherProblem, typename UnaryFunction>
+            void append_problem (OtherProblem && other, UnaryFunction label_map) {
+                if (dimension != other.dimension)
+                    throw std::logic_error("incompatible problem dimensions");
                 orig_data.reserve(orig_data.size() + other.orig_data.size());
                 orig_data.insert(orig_data.end(),
                                  std::make_move_iterator(other.orig_data.begin()),
                                  std::make_move_iterator(other.orig_data.end()));
                 other.orig_data.clear();
-                labels.insert(labels.end(),
-                              other.labels.begin(),
-                              other.labels.end());
+                std::transform(other.labels.begin(),
+                               other.labels.end(),
+                               std::back_inserter(labels),
+                               label_map);
                 other.labels.clear();
             }
 
-            std::pair<Container const&, double> operator[] (size_t i) const {
-                return std::pair<Container const&, double>(orig_data[i], labels[i]);
+            void append_problem (basic_problem && other) {
+                append_problem(std::move(other),
+                               [] (Label x) -> Label {
+                                   return x;
+                               });
+            }
+
+            std::pair<Container const&, Label> operator[] (size_t i) const {
+                return std::pair<Container const&, Label>(orig_data[i], labels[i]);
             }
 
             size_t size () const {
@@ -81,38 +135,57 @@ namespace svm {
             void map_labels (UnaryFunction const& map) {
                 std::transform(labels.begin(), labels.end(), labels.begin(), map);
             }
+
+            template <class OtherContainer, class OtherLabel>
+            friend class basic_problem;
         protected:
             std::vector<Container> orig_data;
-            std::vector<double> labels;
+            std::vector<Label> labels;
         private:
             size_t dimension;
         };
 
-        class patch_through_problem : public basic_problem<dataset> {
+        template <class Label>
+        class patch_through_problem : public basic_problem<dataset, Label> {
         public:
             static bool const is_precomputed = false;
-            patch_through_problem(size_t dim) : basic_problem<dataset>(dim) {};
+            patch_through_problem(size_t dim) : basic_problem<dataset, Label>(dim) {};
             patch_through_problem(patch_through_problem const&) = delete;
             patch_through_problem & operator= (patch_through_problem const&) = delete;
             patch_through_problem(patch_through_problem &&) = default;
             patch_through_problem & operator= (patch_through_problem &&) = default;
 
+            template <class OtherProblem, typename UnaryFunction>
+            patch_through_problem(OtherProblem && other, UnaryFunction map)
+                : basic_problem<dataset, Label>(std::move(other), map) {}
+
+            template <typename ..., typename L = Label,
+                      typename = typename std::enable_if<is_convertible_label<L>::value>::type>
             struct svm_problem generate() {
                 ptrs.clear();
                 for (dataset & ds : orig_data)
                     ptrs.push_back(ds.ptr());
+                raw_labels.clear();
+                for (Label const& l : labels)
+                    raw_labels.push_back(l);
                 struct svm_problem p;
                 p.x = ptrs.data();
-                p.y = labels.data();
-                p.l = labels.size();
+                p.y = raw_labels.data();
+                p.l = raw_labels.size();
                 return p;
             }
+
+            template <class OtherContainer, class OtherLabel>
+            friend class basic_problem;
         private:
+            using basic_problem<dataset, Label>::orig_data;
+            using basic_problem<dataset, Label>::labels;
             std::vector<struct svm_node *> ptrs;
+            std::vector<double> raw_labels;
         };
 
-        template <class Kernel, class Container>
-        class precompute_kernel_problem : public basic_problem<Container> {
+        template <class Kernel, class Container, class Label>
+        class precompute_kernel_problem : public basic_problem<Container, Label> {
         public:
             static bool const is_precomputed = true;
             precompute_kernel_problem(precompute_kernel_problem const&) = delete;
@@ -120,13 +193,19 @@ namespace svm {
             precompute_kernel_problem(precompute_kernel_problem &&) = default;
             precompute_kernel_problem & operator= (precompute_kernel_problem &&) = default;
 
+            template <class OtherProblem, typename UnaryFunction>
+            precompute_kernel_problem(OtherProblem && other, UnaryFunction map)
+                : basic_problem<Container, Label>(std::move(other), map), kernel(std::move(other.kernel)) {}
+
             template <typename = typename std::enable_if<std::is_default_constructible<Kernel>::value>::type>
             precompute_kernel_problem (size_t dim)
-                : basic_problem<Container>(dim) {}
+                : basic_problem<Container, Label>(dim) {}
 
             precompute_kernel_problem (const Kernel & k, size_t dim)
-                : basic_problem<Container>(dim), kernel(k) {}
+                : basic_problem<Container, Label>(dim), kernel(k) {}
 
+            template <typename ..., class L = Label,
+                      typename = typename std::enable_if<is_convertible_label<L>::value>::type>
             struct svm_problem generate() {
                 kernel_data.clear();
                 ptrs.clear();
@@ -150,9 +229,15 @@ namespace svm {
                 }
                 return dataset(v, 0, false);
             }
+
+            template <class OtherContainer, class OtherLabel>
+            friend class basic_problem;
+
+            template <class OtherKernel, class OtherContainer, class OtherLabel>
+            friend class precompute_kernel_problem;
         private:
-            using basic_problem<Container>::orig_data;
-            using basic_problem<Container>::labels;
+            using basic_problem<Container, Label>::orig_data;
+            using basic_problem<Container, Label>::labels;
             Kernel kernel;
             std::vector<dataset> kernel_data;
             std::vector<struct svm_node *> ptrs;
@@ -160,9 +245,9 @@ namespace svm {
 
     }
 
-    template <class Kernel>
-    class problem : public detail::precompute_kernel_problem<Kernel, typename Kernel::input_container_type> {
-        using detail::precompute_kernel_problem<Kernel, typename Kernel::input_container_type>::precompute_kernel_problem;
+    template <class Kernel, class Label = double>
+    class problem : public detail::precompute_kernel_problem<Kernel, typename Kernel::input_container_type, Label> {
+        using detail::precompute_kernel_problem<Kernel, typename Kernel::input_container_type, Label>::precompute_kernel_problem;
     };
 
 }

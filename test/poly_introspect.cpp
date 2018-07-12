@@ -54,7 +54,7 @@ static const model_t model = [] {
 static const array_t ya = [] {
     array_t ya;
     auto it = ya.begin();
-    for (auto p : model) {
+    for (auto p : model.classifier()) {
         std::tie(*(it), std::ignore) = p;
         std::cout << *it << std::endl;
         ++it;
@@ -63,12 +63,12 @@ static const array_t ya = [] {
 } ();
 
 TEST_CASE("polynomial-introspect-scalar") {
-    svm::tensor_introspector<kernel_t, 0> introspector(model);
+    auto introspector = svm::tensor_introspect<0>(model.classifier());
     CHECK(introspector.tensor() == doctest::Approx(0.25));
 }
 
 TEST_CASE("polynomial-introspect-vector") {
-    svm::tensor_introspector<kernel_t, 1> introspector(model);
+    auto introspector = svm::tensor_introspect<1>(model.classifier());
     array_t u = {0, 0, 0, 0};
     auto itX = xs.begin();
     auto itYA = ya.begin();
@@ -83,7 +83,7 @@ TEST_CASE("polynomial-introspect-vector") {
 }
 
 TEST_CASE("polynomial-introspect-matrix") {
-    svm::tensor_introspector<kernel_t, 2> introspector(model);
+    auto introspector = svm::tensor_introspect<2>(model.classifier());
     std::array<array_t, 4> u {
         array_t {0, 0, 0, 0},
         array_t {0, 0, 0, 0},

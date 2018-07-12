@@ -22,6 +22,7 @@
 #include "svm-wrapper.hpp"
 #include "hyperplane_model.hpp"
 #include "model_test.hpp"
+#include "test_problems_equal.hpp"
 
 #include <iostream>
 #include <random>
@@ -30,7 +31,7 @@
 
 
 template <class Kernel, class Tag>
-void serializer_test (size_t N, size_t M, double threshold, std::string const& name) {
+void model_serializer_test (size_t N, size_t M, double threshold, std::string const& name) {
     std::mt19937 rng(42);
 
     hyperplane_model trial_model(N, rng);
@@ -52,4 +53,40 @@ void serializer_test (size_t N, size_t M, double threshold, std::string const& n
 
     success_rate = test_model(M, rng, empirical_model, restored_model);
     CHECK(success_rate == doctest::Approx(1.));
+}
+
+struct custom_label {
+    static const size_t label_dim = 2;
+    custom_label(double x, double y) { xs[0] = x; xs[1] = y; }
+    template <class Iterator>
+    custom_label(Iterator begin) { xs[0] = *begin; xs[1] = *(begin+1); }
+    double const * begin() const { return xs; }
+    double const * end() const { return xs + 2; }
+    friend bool operator== (custom_label lhs, custom_label rhs) {
+        return lhs.xs[0] == doctest::Approx(rhs.xs[0])
+            && lhs.xs[1] == doctest::Approx(rhs.xs[1]);
+    }
+private:
+    double xs[2];
+};
+
+template <class Kernel, class Tag>
+void problem_serializer_test (size_t N, size_t M, std::string const& name) {
+    using mapped_problem_t = svm::problem<Kernel, custom_label>;
+    std::mt19937 rng(42);
+
+    hyperplane_model trial_model(N, rng);
+    auto orig_prob = fill_problem<svm::problem<Kernel>>(M, rng, trial_model);
+
+    auto label_map = [] (double l) -> custom_label { return { l, (l+2)*(l+2) }; };
+    auto mapped_prob = mapped_problem_t(std::move(orig_prob), label_map);
+
+    svm::problem_serializer<Tag, mapped_problem_t> saver(mapped_prob);
+    saver.save(name);
+
+    mapped_problem_t restored_prob(0);
+    svm::problem_serializer<Tag, mapped_problem_t> loader(restored_prob);
+    loader.load(name);
+
+    test_problems_equal(mapped_prob, restored_prob);
 }

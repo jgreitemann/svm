@@ -3,6 +3,10 @@ include_directories(doctest)
 add_executable(combinatorics combinatorics.cpp)
 add_test(combinatorics combinatorics)
 
+add_executable(problem problem.cpp)
+target_link_libraries(problem svm)
+add_test(problem problem)
+
 add_executable(hyperplane-builtin hyperplane_builtin.cpp)
 target_link_libraries(hyperplane-builtin svm)
 add_test(hyperplane-builtin hyperplane-builtin)
@@ -38,6 +42,10 @@ add_test(data_view data_view)
 add_executable(poly-introspect poly_introspect.cpp)
 target_link_libraries(poly-introspect svm)
 add_test(poly-introspect poly-introspect)
+
+add_executable(multi-introspect multi_introspect.cpp)
+target_link_libraries(multi-introspect svm)
+add_test(multi-introspect multi-introspect)
 
 add_executable(ascii-serialization ascii_serialization.cpp)
 target_link_libraries(ascii-serialization svm)
