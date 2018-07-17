@@ -130,6 +130,11 @@ TEST_CASE("classifier-consistency") {
 
     auto cl2 = model2.classifier();
     auto cl3 = model3.classifier(ternary_class::RED, ternary_class::BLUE);
+    auto cl3_rev = model3.classifier(ternary_class::BLUE, ternary_class::RED);
+    CHECK(cl3.labels().first == ternary_class::RED);
+    CHECK(cl3.labels().second == ternary_class::BLUE);
+    CHECK(cl3_rev.labels().first == ternary_class::BLUE);
+    CHECK(cl3_rev.labels().second == ternary_class::RED);
 
     CHECK(cl2.rho() == doctest::Approx(cl3.rho()));
 

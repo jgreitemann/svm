@@ -201,6 +201,15 @@ namespace svm {
                 return parent.params();
             }
 
+            std::pair<Label,Label> labels() const {
+                if (swapped > 0)
+                    return {Label(parent.m->label[k1]),
+                            Label(parent.m->label[k2])};
+                else
+                    return {Label(parent.m->label[k2]),
+                            Label(parent.m->label[k1])};
+            }
+
         private:
             size_t k1, k2;
             size_t k1_offset, k2_offset, k_comb;
