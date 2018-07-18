@@ -299,7 +299,7 @@ namespace svm {
 
         template <typename Problem = problem_t,
                   typename = std::enable_if_t<!Problem::is_precomputed>>
-        std::pair<Label, decision_type> operator() (input_container_type const& xj) {
+        std::pair<Label, decision_type> operator() (input_container_type const& xj) const {
             decision_type dec;
             Label label(svm_predict_values(m, xj.ptr(), reinterpret_cast<double*>(&dec)));
             return std::make_pair(label, dec);
@@ -308,7 +308,7 @@ namespace svm {
         template <typename Problem = problem_t,
                   typename = std::enable_if_t<Problem::is_precomputed>,
                   bool dummy = false>
-        std::pair<Label, decision_type> operator() (input_container_type const& xj) {
+        std::pair<Label, decision_type> operator() (input_container_type const& xj) const {
             dataset kernelized = prob.kernelize(xj);
             decision_type dec;
             Label label(svm_predict_values(m, kernelized.ptr(), reinterpret_cast<double*>(&dec)));
