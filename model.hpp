@@ -178,13 +178,13 @@ namespace svm {
             template <typename..., size_t NC = model::nr_classifiers,
                       typename = std::enable_if_t<NC == 1>>
             std::pair<Label, double> operator() (input_container_type const& xj) {
-                return model(xj);
+                return parent(xj);
             }
 
             template <typename..., size_t NC = model::nr_classifiers,
                       typename = std::enable_if_t<(NC > 1)>, bool dummy = false>
             std::pair<Label, double> operator() (input_container_type const& xj) {
-                auto p = model(xj);
+                auto p = parent(xj);
                 return std::make_pair(p.first, p.second[k_comb]);
             }
 
