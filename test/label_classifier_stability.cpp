@@ -104,4 +104,10 @@ TEST_CASE("4-class-classifiers") {
             CHECK(res.second[i] == cres.second);
         }
     }
+
+    auto rhos = model.rho();
+    for (size_t i = 0; i < nr_classifiers; ++i) {
+        double crho = classifiers[i].rho();
+        CHECK(rhos[i] == crho);
+    }
 }

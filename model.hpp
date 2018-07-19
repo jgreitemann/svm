@@ -194,7 +194,7 @@ namespace svm {
             }
 
             double rho () const {
-                return parent.m->rho[k_comb];
+                return swapped * parent.m->rho[k_comb];
             }
 
             parameters_t const& params () const {
@@ -320,7 +320,8 @@ namespace svm {
                   typename = std::enable_if_t<!Problem::is_precomputed>>
         std::pair<Label, decision_type> raw_eval (input_container_type const& xj) const {
             decision_type dec;
-            Label label(svm_predict_values(m, xj.ptr(), reinterpret_cast<double*>(&dec)));
+            Label label(svm_predict_values(m, xj.ptr(),
+                                           reinterpret_cast<double*>(&dec)));
             return std::make_pair(label, dec);
         }
 
@@ -330,7 +331,8 @@ namespace svm {
         std::pair<Label, decision_type> raw_eval (input_container_type const& xj) const {
             dataset kernelized = prob.kernelize(xj);
             decision_type dec;
-            Label label(svm_predict_values(m, kernelized.ptr(), reinterpret_cast<double*>(&dec)));
+            Label label(svm_predict_values(m, kernelized.ptr(),
+                                           reinterpret_cast<double*>(&dec)));
             return std::make_pair(label, dec);
         }
 
@@ -338,6 +340,14 @@ namespace svm {
             auto p = raw_eval(xj);
             permute(p.second);
             return p;
+        }
+
+        decision_type rho() const {
+            decision_type r;
+            std::copy(m->rho, m->rho + nr_classifiers,
+                      reinterpret_cast<double*>(&r));
+            permute(r);
+            return r;
         }
 
         template <typename..., size_t NL = nr_labels,
