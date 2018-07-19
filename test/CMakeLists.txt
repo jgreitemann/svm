@@ -47,6 +47,10 @@ add_executable(multi-introspect multi_introspect.cpp)
 target_link_libraries(multi-introspect svm)
 add_test(multi-introspect multi-introspect)
 
+add_executable(label-classifier-stability label_classifier_stability.cpp)
+target_link_libraries(label-classifier-stability svm)
+add_test(label-classifier-stability label-classifier-stability)
+
 add_executable(ascii-serialization ascii_serialization.cpp)
 target_link_libraries(ascii-serialization svm)
 add_test(ascii-serialization ascii-serialization)
