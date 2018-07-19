@@ -137,8 +137,11 @@ namespace svm {
             classifier_type (model const& parent, size_t k1, size_t k2)
                 : parent(parent), k1(k1), k2(k2) {
                 if (k1 > k2) {
+                    swapped = -1;
                     std::swap(k1, k2);
                     std::swap(this->k1, this->k2);
+                } else {
+                    swapped = 1;
                 }
                 size_t sum = 0;
                 for (size_t k = 0; k < model::nr_labels; ++k) {
@@ -178,27 +181,39 @@ namespace svm {
             template <typename..., size_t NC = model::nr_classifiers,
                       typename = std::enable_if_t<NC == 1>>
             std::pair<Label, double> operator() (input_container_type const& xj) {
-                return model(xj);
+                auto p = parent(xj);
+                p.second *= swapped;
+                return p;
             }
 
             template <typename..., size_t NC = model::nr_classifiers,
                       typename = std::enable_if_t<(NC > 1)>, bool dummy = false>
             std::pair<Label, double> operator() (input_container_type const& xj) {
-                auto p = model(xj);
-                return std::make_pair(p.first, p.second[k_comb]);
+                auto p = parent.raw_eval(xj);
+                return std::make_pair(p.first, swapped * p.second[k_comb]);
             }
 
             double rho () const {
-                return parent.m->rho[k_comb];
+                return swapped * parent.m->rho[k_comb];
             }
 
             parameters_t const& params () const {
                 return parent.params();
             }
 
+            std::pair<Label,Label> labels() const {
+                if (swapped > 0)
+                    return {Label(parent.m->label[k1]),
+                            Label(parent.m->label[k2])};
+                else
+                    return {Label(parent.m->label[k2]),
+                            Label(parent.m->label[k1])};
+            }
+
         private:
             size_t k1, k2;
             size_t k1_offset, k2_offset, k_comb;
+            int swapped;
             model const& parent;
         };
 
@@ -233,6 +248,7 @@ namespace svm {
                 throw std::runtime_error("SVM returned NaN. Specified nu is infeasible.");
             if (m->nr_class != nr_labels)
                 throw std::runtime_error("inconsistent number of label values");
+            init_perm();
         }
 
         model (model const&) = delete;
@@ -244,6 +260,7 @@ namespace svm {
               m(other.m)
         {
             other.m = nullptr;
+            init_perm();
         }
 
         model & operator= (model && other) {
@@ -253,6 +270,7 @@ namespace svm {
                 svm_free_and_destroy_model(&m);
             m = other.m;
             other.m = nullptr;
+            init_perm();
             return *this;
         }
 
@@ -263,17 +281,18 @@ namespace svm {
 
         label_arr_t labels () const {
             label_arr_t ret;
-            std::copy(m->label, m->label + nr_labels, ret.begin());
+            for (size_t k = 0; k < nr_labels; ++k) {
+                ret[k] = m->label[perm_inv[k]];
+            }
             return ret;
         }
 
         classifier_arr_t classifiers () const {
             classifier_arr_t ret;
-            auto ls = labels();
             auto it = ret.begin();
-            for (size_t k1 = 0; k1 < nr_labels - 1; ++k1) {
-                for (size_t k2 = k1 + 1; k2 < nr_labels; ++k2, ++it) {
-                    ret.emplace_back(*this, k1, k2);
+            for (size_t r1 = 0; r1 < nr_labels - 1; ++r1) {
+                for (size_t r2 = r1 + 1; r2 < nr_labels; ++r2, ++it) {
+                    ret.emplace_back(*this, perm_inv[r1], perm_inv[r2]);
                 }
             }
             return ret;
@@ -281,14 +300,14 @@ namespace svm {
 
         classifier_type classifier (Label l1, Label l2) const {
             auto ls = labels();
-            size_t k1, k2;
-            for (size_t k = 0; k < nr_labels; ++k) {
-                if (l1 == ls[k])
-                    k1 = k;
-                if (l2 == ls[k])
-                    k2 = k;
+            size_t r1, r2;
+            for (size_t r = 0; r < nr_labels; ++r) {
+                if (l1 == ls[r])
+                    r1 = r;
+                if (l2 == ls[r])
+                    r2 = r;
             }
-            return classifier_type {*this, k1, k2};
+            return classifier_type {*this, perm_inv[r1], perm_inv[r2]};
         }
 
         template <typename..., size_t NC = nr_classifiers,
@@ -299,20 +318,36 @@ namespace svm {
 
         template <typename Problem = problem_t,
                   typename = std::enable_if_t<!Problem::is_precomputed>>
-        std::pair<Label, decision_type> operator() (input_container_type const& xj) {
+        std::pair<Label, decision_type> raw_eval (input_container_type const& xj) const {
             decision_type dec;
-            Label label(svm_predict_values(m, xj.ptr(), reinterpret_cast<double*>(&dec)));
+            Label label(svm_predict_values(m, xj.ptr(),
+                                           reinterpret_cast<double*>(&dec)));
             return std::make_pair(label, dec);
         }
 
         template <typename Problem = problem_t,
                   typename = std::enable_if_t<Problem::is_precomputed>,
                   bool dummy = false>
-        std::pair<Label, decision_type> operator() (input_container_type const& xj) {
+        std::pair<Label, decision_type> raw_eval (input_container_type const& xj) const {
             dataset kernelized = prob.kernelize(xj);
             decision_type dec;
-            Label label(svm_predict_values(m, kernelized.ptr(), reinterpret_cast<double*>(&dec)));
+            Label label(svm_predict_values(m, kernelized.ptr(),
+                                           reinterpret_cast<double*>(&dec)));
             return std::make_pair(label, dec);
+        }
+
+        std::pair<Label, decision_type> operator() (input_container_type const& xj) const {
+            auto p = raw_eval(xj);
+            permute(p.second);
+            return p;
+        }
+
+        decision_type rho() const {
+            decision_type r;
+            std::copy(m->rho, m->rho + nr_classifiers,
+                      reinterpret_cast<double*>(&r));
+            permute(r);
+            return r;
         }
 
         template <typename..., size_t NL = nr_labels,
@@ -341,9 +376,68 @@ namespace svm {
         friend struct model_serializer;
 
     private:
+        void init_perm () {
+            // permutation of label indices
+            std::array<size_t, nr_labels> perm;
+            for (size_t k = 0; k < nr_labels; ++k)
+                perm_inv[k] = k;
+            std::sort(perm_inv.begin(), perm_inv.end(),
+                      [this] (size_t k1, size_t k2) {
+                          return label_type(m->label[k1]) < label_type(m->label[k2]);
+                      });
+            // invert
+            for (size_t k = 0; k < nr_labels; ++k)
+                perm[perm_inv[k]] = k;
+
+            // permutation of classifier indices
+            std::array<size_t, nr_classifiers> permc_inv;
+            std::array<int, nr_classifiers> signs;
+            auto it = permc_inv.begin();
+            auto sg_it = signs.begin();
+            for (size_t k1 = 0; k1 < nr_labels - 1; ++k1) {
+                for (size_t k2 = k1 + 1; k2 < nr_labels; ++k2, ++it, ++sg_it) {
+                    size_t r1 = perm[k1];
+                    size_t r2 = perm[k2];
+                    if (r1 > r2) {
+                        std::swap(r1, r2);
+                        *sg_it = -1;
+                    } else
+                        *sg_it = 1;
+                    *it = (2 * nr_labels - 3 - r1) * r1 / 2 + r2 - 1;
+                }
+            }
+            // invert
+            for (size_t k = 0; k < nr_classifiers; ++k) {
+                permc[permc_inv[k]] = k;
+                permc_signs[permc_inv[k]] = signs[k];
+            }
+        }
+
+        void permute(std::array<double, nr_classifiers> & arr) const {
+            for (size_t c = 0; c < nr_classifiers; ++c) {
+                if (permc[c] >= nr_classifiers)
+                    continue;
+                size_t p, h;
+                for (h = c; (p = permc[h]) != c; h = p) {
+                    std::swap(arr[h], arr[p]);
+                    permc[h] += nr_classifiers;
+                }
+                permc[h] += nr_classifiers;
+            }
+            for (size_t c = 0; c < nr_classifiers; ++c) {
+                arr[c] *= permc_signs[c];
+                permc[c] -= nr_classifiers;
+            }
+        }
+
+        void permute(double & a) const { /* pass */ }
+
         problem_t prob;
         parameters_t params_;
         struct svm_model * m;
+        std::array<size_t, nr_labels> perm_inv;
+        mutable std::array<size_t, nr_classifiers> permc;
+        std::array<int, nr_classifiers> permc_signs;
     };
 
 }

@@ -221,7 +221,7 @@ namespace svm {
                 p.l = labels.size();
                 return p;
             }
-            dataset kernelize(Container const& xi, double index = 1) {
+            dataset kernelize(Container const& xi, double index = 1) const {
                 std::vector<double> v;
                 v.push_back(index);
                 for (Container const& xj : orig_data) {

@@ -237,6 +237,7 @@ namespace svm {
 
             model_.m->free_sv = 1;
             model_.params_ = typename Model::parameters_t(model_.m->param);
+            model_.init_perm();
         }
 
     private:

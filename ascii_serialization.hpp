@@ -58,6 +58,7 @@ namespace svm {
                                             + filename + ".model");
             }
             model_.params_ = typename Model::parameters_t(model_.m->param);
+            model_.init_perm();
         }
 
     private:
