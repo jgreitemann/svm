@@ -123,13 +123,14 @@ TEST_CASE("problem-map-binary-classification") {
     svm::problem<kernel_t, binary_class::label> mapped_problem(std::move(prob), classifier);
 
     using model_t = svm::model<kernel_t, binary_class::label>;
-    size_t nr_labels = model_t::nr_labels;
-    size_t nr_classifiers = model_t::nr_classifiers;
-    CHECK(nr_labels == 2);
-    CHECK(nr_classifiers == 1);
     static_assert(std::is_same<typename model_t::decision_type, double>::value,
                   "wrong decision type for binary classification");
     model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
+    size_t nr_labels = model.nr_labels();
+    size_t nr_classifiers = model.nr_classifiers();
+    CHECK(nr_labels == 2);
+    CHECK(nr_classifiers == 1);
+
     double succ = 0.;
     for (size_t i = 0; i < M; ++i) {
         cmplx c {uniform(rng), uniform(rng)};
@@ -176,14 +177,64 @@ TEST_CASE("problem-map-ternary-classification") {
     svm::problem<kernel_t, ternary_class::label> mapped_problem(std::move(prob), classifier);
 
     using model_t = svm::model<kernel_t, ternary_class::label>;
-    size_t nr_labels = model_t::nr_labels;
-    size_t nr_classifiers = model_t::nr_classifiers;
-    CHECK(nr_labels == 3);
-    CHECK(nr_classifiers == 3);
     static_assert(std::is_same<typename model_t::decision_type, std::array<double,3>>::value,
                   "wrong decision type for ternary classification");
-
     model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
+    size_t nr_labels = model.nr_labels();
+    size_t nr_classifiers = model.nr_classifiers();
+    CHECK(nr_labels == 3);
+    CHECK(nr_classifiers == 3);
+
+    double succ = 0.;
+    for (size_t i = 0; i < M; ++i) {
+        cmplx c {uniform(rng), uniform(rng)};
+        auto res = model(C {c.real(), c.imag()});
+        auto label = res.first;
+        auto dec = res.second;
+        CHECK(std::distance(dec.begin(), dec.end()) == nr_classifiers);
+        if (classifier(c) == label)
+            succ += 1.;
+    }
+    succ /= M;
+    std::cout << "success rate: " << succ << std::endl;
+    CHECK(succ > 0.99);
+}
+
+TEST_CASE("problem-map-dynamic-classification") {
+    using cmplx = std::complex<double>;
+    using kernel_t = svm::kernel::linear;
+    using problem_t = svm::problem<kernel_t, cmplx>;
+    using C = typename problem_t::input_container_type;
+
+    const size_t M = 1000;
+
+    std::mt19937 rng(42);
+    std::uniform_real_distribution<double> uniform(-1, 1);
+
+    problem_t prob(2);
+    for (size_t i = 0; i < M; ++i) {
+        cmplx c {uniform(rng), uniform(rng)};
+        prob.add_sample(C {c.real(), c.imag()}, c);
+    }
+
+    auto classifier = [] (cmplx c) -> double {
+        double angle = std::arg(c);
+        if (angle < -1) return 0.;
+        if (angle <  1) return 1.;
+        return 2.;
+    };
+
+    svm::problem<kernel_t, double> mapped_problem(std::move(prob), classifier);
+
+    using model_t = svm::model<kernel_t, double>;
+    static_assert(std::is_same<typename model_t::decision_type, std::vector<double>>::value,
+                  "wrong decision type for dynamic classification");
+    model_t model(std::move(mapped_problem), svm::parameters<kernel_t> {});
+    size_t nr_labels = model.nr_labels();
+    size_t nr_classifiers = model.nr_classifiers();
+    CHECK(nr_labels == 3);
+    CHECK(nr_classifiers == 3);
+
     double succ = 0.;
     for (size_t i = 0; i < M; ++i) {
         cmplx c {uniform(rng), uniform(rng)};

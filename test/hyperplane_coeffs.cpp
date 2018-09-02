@@ -41,7 +41,8 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
         fill_problem<svm::problem<Kernel>>(M, rng, trial_model),
         params);
     using input_t = typename svm::model<Kernel>::input_container_type;
-    auto introspector = linear_introspect(empirical_model.classifier(1., -1.));
+    auto empirical_classifier = empirical_model.classifier(1., -1.);
+    auto introspector = linear_introspect(empirical_classifier);
 
     std::vector<double> empirical_C(N);
     for (size_t i = 0; i < N; ++i)
@@ -55,7 +56,7 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
     // compare decision function values from model with those
     // manually calculated from the inferred hyperplane coeffs
     std::uniform_real_distribution<double> uniform;
-    double d_pred, d_calc;
+    double d_calc, d_pred;
     for (size_t m = 0; m < N; ++m) {
         std::vector<double> xs(N);
         for (double & x : xs)
@@ -67,7 +68,7 @@ void hyperplane_coeffs_test (size_t N, size_t M, double eps) {
             ++itC;
         }
         d_calc -= introspector.right_hand_side();
-        std::tie(std::ignore, d_pred) = empirical_model(input_t(std::move(xs)));
+        std::tie(std::ignore, d_pred) = empirical_classifier(input_t(std::move(xs)));
         CHECK(d_calc == doctest::Approx(d_pred));
     }
 

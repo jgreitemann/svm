@@ -19,6 +19,7 @@
 #pragma once
 
 #include "dataset.hpp"
+#include "label.hpp"
 #include "problem.hpp"
 #include "parameters.hpp"
 #include "kernel.hpp"
