@@ -233,7 +233,7 @@ namespace svm {
                                             std::pair<size_t, size_t>,
                                             std::array<size_t, nr_labels>>;
         using label_arr_t = std::array<label_type, nr_labels>;
-        using classifier_arr_t = std::vector<classifier_type>;
+        using classifier_arr_t = std::array<classifier_type, nr_classifiers>;
 
         model () : prob(0), m(nullptr) {}
 
@@ -292,15 +292,10 @@ namespace svm {
             return ret;
         }
 
+        template <typename...,
+                  typename Indices = std::make_index_sequence<nr_classifiers>>
         classifier_arr_t classifiers () const {
-            classifier_arr_t ret;
-            auto it = ret.begin();
-            for (size_t r1 = 0; r1 < nr_labels - 1; ++r1) {
-                for (size_t r2 = r1 + 1; r2 < nr_labels; ++r2, ++it) {
-                    ret.emplace_back(*this, perm_inv[r1], perm_inv[r2]);
-                }
-            }
-            return ret;
+            return classifiers_impl(Indices {});
         }
 
         classifier_type classifier (Label l1, Label l2) const {
@@ -436,6 +431,20 @@ namespace svm {
         }
 
         void permute(double & a) const { /* pass */ }
+
+        template <size_t... R>
+        classifier_arr_t classifiers_impl (std::index_sequence<R...>) const {
+            return {
+                [&](size_t r) -> classifier_type {
+                    size_t r1 = 0, r2 = r + 1;
+                    while (r2 >= nr_labels) {
+                        ++r1;
+                        r2 -= nr_labels - 1 - r1;
+                    }
+                    return {*this, perm_inv[r1], perm_inv[r2]};
+                }(R)...
+            };
+        }
 
         problem_t prob;
         parameters_t params_;
