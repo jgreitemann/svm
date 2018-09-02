@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <numeric>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -34,8 +35,88 @@
 
 namespace svm {
 
+    namespace detail {
+
+        template <typename ContiguousContainer>
+        struct container_factory {
+            using value_type = typename ContiguousContainer::value_type;
+            static ContiguousContainer create(size_t size) {
+                return ContiguousContainer(size);
+            }
+
+            template <typename ContiguousIterator>
+            static ContiguousContainer copy(ContiguousIterator begin, ContiguousIterator end) {
+                return ContiguousContainer(begin, end);
+            }
+
+            static value_type* ptr(ContiguousContainer& c) {
+                return c.data();
+            }
+
+            static value_type const* ptr(ContiguousContainer const& c) {
+                return c.data();
+            }
+        };
+
+        template <typename T, size_t N>
+        struct container_factory<std::array<T, N>> {
+            static std::array<T,N> create(size_t) {
+                return {};
+            }
+
+            template <typename ContiguousIterator,
+                      typename Indices = std::make_index_sequence<N>>
+            static std::array<T,N> copy(ContiguousIterator begin, ContiguousIterator end) {
+                if (std::distance(begin, end) != N)
+                    throw std::invalid_argument("specified range does not match array size");
+                return copy_impl(begin, Indices{});
+            }
+
+            static T* ptr(std::array<T,N>& c) {
+                return c.data();
+            }
+
+            static T const* ptr(std::array<T,N> const& c) {
+                return c.data();
+            }
+        private:
+            template <typename ContiguousIterator,
+                      size_t... I>
+            static std::array<T,N> copy_impl(ContiguousIterator begin,
+                                       std::index_sequence<I...>) {
+                return {begin[I]...};
+            }
+        };
+
+        template <>
+        struct container_factory<double> {
+            static double create(size_t) {
+                return {};
+            }
+
+            template <typename ContiguousIterator>
+            static double copy(ContiguousIterator begin, ContiguousIterator end) {
+                if (std::distance(begin, end) != 1)
+                    throw std::invalid_argument("specified range exceed one element");
+                return *begin;
+            }
+
+            static double* ptr(double& c) {
+                return &c;
+            }
+
+            static double const* ptr(double const& c) {
+                return &c;
+            }
+        };
+
+    }
+
     template <class Kernel, class Label = double>
     class model {
+    private:
+        static const size_t NRL = traits::label_traits<Label>::nr_labels;
+        static const size_t NRC = NRL * (NRL - 1) / 2;
     public:
         typedef Kernel kernel_type;
         typedef problem<Kernel, Label> problem_t;
@@ -147,14 +228,14 @@ namespace svm {
                     swapped = 1;
                 }
                 size_t sum = 0;
-                for (size_t k = 0; k < model::nr_labels; ++k) {
+                for (size_t k = 0; k < parent.nr_labels(); ++k) {
                     if (k == k1)
                         k1_offset = sum;
                     if (k == k2)
                         k2_offset = sum;
                     sum += parent.m->nSV[k];
                 }
-                k_comb = k1 * (nr_labels - 1) - k1 * (k1 - 1) / 2 + k2 - k1 - 1;
+                k_comb = k1 * (parent.nr_labels() - 1) - k1 * (k1 - 1) / 2 + k2 - k1 - 1;
             }
 
             const_iterator begin () const {
@@ -183,19 +264,25 @@ namespace svm {
                 };
             }
 
-            template <typename..., size_t NC = model::nr_classifiers,
-                      typename = std::enable_if_t<NC == 1>>
+            template <typename...,
+                      typename L = Label,
+                      typename = std::enable_if_t<traits::is_binary_label<L>::value>>
             std::pair<Label, double> operator() (input_container_type const& xj) {
-                auto p = parent(xj);
-                p.second *= swapped;
+                auto p = parent.raw_eval(xj);
+                double & dec = detail::container_factory<decltype(p.second)>::ptr(p.second)[k_comb];
+                dec *= swapped;
                 return p;
             }
 
-            template <typename..., size_t NC = model::nr_classifiers,
-                      typename = std::enable_if_t<(NC > 1)>, bool dummy = false>
+            template <typename...,
+                      typename L = Label,
+                      typename = std::enable_if_t<!traits::is_binary_label<L>::value>,
+                      bool dummy = true>
             std::pair<Label, double> operator() (input_container_type const& xj) {
                 auto p = parent.raw_eval(xj);
-                return std::make_pair(p.first, swapped * p.second[k_comb]);
+                double & dec = detail::container_factory<decltype(p.second)>::ptr(p.second)[k_comb];
+                dec *= swapped;
+                return {p.first, dec};
             }
 
             double rho () const {
@@ -222,18 +309,34 @@ namespace svm {
             model const& parent;
         };
 
-        static const size_t nr_labels = detail::label_traits<Label>::nr_labels;
-        static const size_t nr_classifiers = nr_labels * (nr_labels - 1) / 2;
+        size_t nr_labels() const {
+            if (traits::is_dynamic_label<Label>::value) {
+                return m->nr_class;
+            } else {
+                return traits::label_traits<Label>::nr_labels;
+            }
+        }
 
-        using decision_type = std::conditional_t<nr_classifiers == 1,
-                                                 double,
-                                                 std::array<double, nr_classifiers>>;
+        size_t nr_classifiers() const {
+            return nr_labels() * (nr_labels() - 1) / 2;
+        }
 
-        using nSV_type = std::conditional_t<nr_labels == 2,
-                                            std::pair<size_t, size_t>,
-                                            std::array<size_t, nr_labels>>;
-        using label_arr_t = std::array<label_type, nr_labels>;
-        using classifier_arr_t = std::array<classifier_type, nr_classifiers>;
+        using decision_type =
+            std::conditional_t<traits::is_binary_label<Label>::value,
+                               double,
+                               std::conditional_t<traits::is_dynamic_label<Label>::value,
+                                                  std::vector<double>,
+                                                  std::array<double, NRC>>>;
+
+        using nSV_type = std::conditional_t<traits::is_dynamic_label<Label>::value,
+                                            std::vector<size_t>,
+                                            std::array<size_t, NRL>>;
+        using label_arr_t = std::conditional_t<traits::is_dynamic_label<Label>::value,
+                                               std::vector<label_type>,
+                                               std::array<label_type, NRL>>;
+        using classifier_arr_t = std::conditional_t<traits::is_dynamic_label<Label>::value,
+                                                    std::vector<classifier_type>,
+                                                    std::array<classifier_type, NRC>>;
 
         model () : prob(0), m(nullptr) {}
 
@@ -248,11 +351,14 @@ namespace svm {
                 throw std::runtime_error(err_str);
             }
             m = svm_train(&svm_prob, params_.svm_params_ptr());
-            if (std::any_of(m->rho, m->rho + nr_classifiers,
+            if (!traits::is_dynamic_label<Label>::value
+                && m->nr_class != traits::label_traits<Label>::nr_labels)
+            {
+                throw std::runtime_error("inconsistent number of label values");
+            }
+            if (std::any_of(m->rho, m->rho + nr_classifiers(),
                             [] (double r) { return std::isnan(r); }))
                 throw std::runtime_error("SVM returned NaN. Specified nu is infeasible.");
-            if (m->nr_class != nr_labels)
-                throw std::runtime_error("inconsistent number of label values");
             init_perm();
         }
 
@@ -284,24 +390,38 @@ namespace svm {
                 svm_free_and_destroy_model(&m); // WTF
         }
 
-        label_arr_t labels () const {
-            label_arr_t ret;
-            for (size_t k = 0; k < nr_labels; ++k) {
+        label_arr_t labels() const {
+            auto ret = detail::container_factory<label_arr_t>::create(nr_labels());
+            for (size_t k = 0; k < ret.size(); ++k) {
                 ret[k] = m->label[perm_inv[k]];
             }
             return ret;
         }
 
         template <typename...,
-                  typename Indices = std::make_index_sequence<nr_classifiers>>
-        classifier_arr_t classifiers () const {
+                  typename L = Label,
+                  typename = std::enable_if_t<!traits::is_dynamic_label<L>::value>,
+                  typename Indices = std::make_index_sequence<NRC>>
+        classifier_arr_t classifiers() const {
             return classifiers_impl(Indices {});
         }
 
-        classifier_type classifier (Label l1, Label l2) const {
+        template <typename...,
+                  typename L = Label,
+                  typename = std::enable_if_t<traits::is_dynamic_label<L>::value>>
+        classifier_arr_t classifiers() const {
+            classifier_arr_t cls;
+            cls.reserve(nr_classifiers());
+            for (size_t r1 = 0; r1 < nr_labels() - 1; ++r1)
+                for (size_t r2 = r1 + 1; r2 < nr_labels(); ++r2)
+                    cls.emplace_back(*this, perm_inv[r1], perm_inv[r2]);
+            return cls;
+        }
+
+        classifier_type classifier(Label l1, Label l2) const {
             auto ls = labels();
             size_t r1, r2;
-            for (size_t r = 0; r < nr_labels; ++r) {
+            for (size_t r = 0; r < nr_labels(); ++r) {
                 if (l1 == ls[r])
                     r1 = r;
                 if (l2 == ls[r])
@@ -310,30 +430,38 @@ namespace svm {
             return classifier_type {*this, perm_inv[r1], perm_inv[r2]};
         }
 
-        template <typename..., size_t NC = nr_classifiers,
-                  typename = std::enable_if_t<NC == 1>>
-        classifier_type classifier () const {
+        template <typename...,
+                  typename L = Label,
+                  typename = std::enable_if_t<traits::is_binary_label<L>::value
+                                              || traits::is_dynamic_label<L>::value>>
+        classifier_type classifier() const {
             return classifier_type {*this, perm_inv[0], perm_inv[1]};
         }
 
         template <typename Problem = problem_t,
                   typename = std::enable_if_t<!Problem::is_precomputed>>
-        std::pair<Label, decision_type> raw_eval (input_container_type const& xj) const {
-            decision_type dec;
-            Label label(svm_predict_values(m, xj.ptr(),
-                                           reinterpret_cast<double*>(&dec)));
-            return std::make_pair(label, dec);
+        std::pair<Label, decision_type> raw_eval(input_container_type const& xj) const {
+            std::pair<Label, decision_type> ret {
+                Label{},
+                detail::container_factory<decision_type>::create(nr_classifiers())
+            };
+            ret.first = Label{svm_predict_values(m, xj.ptr(),
+                                                 detail::container_factory<decision_type>::ptr(ret.second))};
+            return ret;
         }
 
         template <typename Problem = problem_t,
                   typename = std::enable_if_t<Problem::is_precomputed>,
                   bool dummy = false>
-        std::pair<Label, decision_type> raw_eval (input_container_type const& xj) const {
+        std::pair<Label, decision_type> raw_eval(input_container_type const& xj) const {
             dataset kernelized = prob.kernelize(xj);
-            decision_type dec;
-            Label label(svm_predict_values(m, kernelized.ptr(),
-                                           reinterpret_cast<double*>(&dec)));
-            return std::make_pair(label, dec);
+            std::pair<Label, decision_type> ret {
+                Label{},
+                detail::container_factory<decision_type>::create(nr_classifiers())
+            };
+            ret.first = Label{svm_predict_values(m, kernelized.ptr(),
+                                                 detail::container_factory<decision_type>::ptr(ret.second))};
+            return ret;
         }
 
         std::pair<Label, decision_type> operator() (input_container_type const& xj) const {
@@ -343,25 +471,15 @@ namespace svm {
         }
 
         decision_type rho() const {
-            decision_type r;
-            std::copy(m->rho, m->rho + nr_classifiers,
-                      reinterpret_cast<double*>(&r));
+            auto r = detail::container_factory<decision_type>::copy(
+                m->rho, m->rho + nr_classifiers());
             permute(r);
             return r;
         }
 
-        template <typename..., size_t NL = nr_labels,
-                  typename = typename std::enable_if_t<NL == 2>>
         nSV_type nSV () const {
-            return {m->nSV[0], m->nSV[1]};
-        }
-
-        template <typename..., size_t NL = nr_labels,
-                  typename = typename std::enable_if_t<(NL > 2)>, bool dummy = false>
-        nSV_type nSV () const {
-            nSV_type n;
-            std::copy(m->nSV, m->nSV + nr_labels, n.begin());
-            return n;
+            return detail::container_factory<nSV_type>::copy(m->nSV,
+                                                             m->nSV + nr_labels());
         }
 
         size_t dim () const {
@@ -377,25 +495,30 @@ namespace svm {
 
     private:
         void init_perm () {
+            // prep member vars
+            perm_inv = detail::container_factory<perm_t>::create(nr_labels());
+            permc = detail::container_factory<permc_t>::create(nr_classifiers());
+            permc_signs = detail::container_factory<permc_signs_t>::create(nr_classifiers());
+
             // permutation of label indices
-            std::array<size_t, nr_labels> perm;
-            for (size_t k = 0; k < nr_labels; ++k)
-                perm_inv[k] = k;
+            std::iota(perm_inv.begin(), perm_inv.end(), 0);
             std::sort(perm_inv.begin(), perm_inv.end(),
                       [this] (size_t k1, size_t k2) {
                           return label_type(m->label[k1]) < label_type(m->label[k2]);
                       });
+
             // invert
-            for (size_t k = 0; k < nr_labels; ++k)
+            auto perm = detail::container_factory<perm_t>::create(nr_labels());
+            for (size_t k = 0; k < perm.size(); ++k)
                 perm[perm_inv[k]] = k;
 
             // permutation of classifier indices
-            std::array<size_t, nr_classifiers> permc_inv;
-            std::array<int, nr_classifiers> signs;
+            auto permc_inv = detail::container_factory<permc_t>::create(nr_classifiers());
+            auto signs = detail::container_factory<permc_signs_t>::create(nr_classifiers());
             auto it = permc_inv.begin();
             auto sg_it = signs.begin();
-            for (size_t k1 = 0; k1 < nr_labels - 1; ++k1) {
-                for (size_t k2 = k1 + 1; k2 < nr_labels; ++k2, ++it, ++sg_it) {
+            for (size_t k1 = 0; k1 < perm.size() - 1; ++k1) {
+                for (size_t k2 = k1 + 1; k2 < perm.size(); ++k2, ++it, ++sg_it) {
                     size_t r1 = perm[k1];
                     size_t r2 = perm[k2];
                     if (r1 > r2) {
@@ -403,30 +526,31 @@ namespace svm {
                         *sg_it = -1;
                     } else
                         *sg_it = 1;
-                    *it = (2 * nr_labels - 3 - r1) * r1 / 2 + r2 - 1;
+                    *it = (2 * perm.size() - 3 - r1) * r1 / 2 + r2 - 1;
                 }
             }
             // invert
-            for (size_t k = 0; k < nr_classifiers; ++k) {
+            for (size_t k = 0; k < permc.size(); ++k) {
                 permc[permc_inv[k]] = k;
                 permc_signs[permc_inv[k]] = signs[k];
             }
         }
 
-        void permute(std::array<double, nr_classifiers> & arr) const {
-            for (size_t c = 0; c < nr_classifiers; ++c) {
-                if (permc[c] >= nr_classifiers)
+        template <typename Container>
+        void permute(Container & arr) const {
+            for (size_t c = 0; c < arr.size(); ++c) {
+                if (permc[c] >= arr.size())
                     continue;
                 size_t p, h;
                 for (h = c; (p = permc[h]) != c; h = p) {
                     std::swap(arr[h], arr[p]);
-                    permc[h] += nr_classifiers;
+                    permc[h] += arr.size();
                 }
-                permc[h] += nr_classifiers;
+                permc[h] += arr.size();
             }
-            for (size_t c = 0; c < nr_classifiers; ++c) {
+            for (size_t c = 0; c < arr.size(); ++c) {
                 arr[c] *= permc_signs[c];
-                permc[c] -= nr_classifiers;
+                permc[c] -= arr.size();
             }
         }
 
@@ -437,9 +561,9 @@ namespace svm {
             return {
                 [&](size_t r) -> classifier_type {
                     size_t r1 = 0, r2 = r + 1;
-                    while (r2 >= nr_labels) {
+                    while (r2 >= nr_labels()) {
                         ++r1;
-                        r2 -= nr_labels - 1 - r1;
+                        r2 -= nr_labels() - 1 - r1;
                     }
                     return {*this, perm_inv[r1], perm_inv[r2]};
                 }(R)...
@@ -449,9 +573,19 @@ namespace svm {
         problem_t prob;
         parameters_t params_;
         struct svm_model * m;
-        std::array<size_t, nr_labels> perm_inv;
-        mutable std::array<size_t, nr_classifiers> permc;
-        std::array<int, nr_classifiers> permc_signs;
+
+        using perm_t = std::conditional_t<traits::is_dynamic_label<Label>::value,
+                                          std::vector<size_t>,
+                                          std::array<size_t, NRL>>;
+        using permc_t = std::conditional_t<traits::is_dynamic_label<Label>::value,
+                                           std::vector<size_t>,
+                                           std::array<size_t, NRC>>;
+        using permc_signs_t = std::conditional_t<traits::is_dynamic_label<Label>::value,
+                                                 std::vector<int>,
+                                                 std::array<int, NRC>>;
+        perm_t perm_inv;
+        mutable permc_t permc;
+        permc_signs_t permc_signs;
     };
 
 }

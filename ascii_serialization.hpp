@@ -76,7 +76,7 @@ namespace svm {
         void save (std::string const& filename) const {
             using input_t = typename Problem::input_container_type;
             using label_t = typename Problem::label_type;
-            using ltraits = typename::svm::detail::label_traits<label_t>;
+            using ltraits = typename::svm::traits::label_traits<label_t>;
             using view_t = typename std::conditional<
                 std::is_same<svm::dataset, input_t>::value,
                 svm::data_view, input_t const&>::type;
@@ -108,7 +108,7 @@ namespace svm {
         void load (std::string const& filename) const {
             using input_t = typename Problem::input_container_type;
             using label_t = typename Problem::label_type;
-            using ltraits = typename::svm::detail::label_traits<label_t>;
+            using ltraits = typename::svm::traits::label_traits<label_t>;
 
             std::ifstream is(filename);
 

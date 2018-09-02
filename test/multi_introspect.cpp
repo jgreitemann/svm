@@ -70,10 +70,11 @@ TEST_CASE("ternary-introspection") {
     }
 
     using model_t = svm::model<kernel_t, label_t>;
-    size_t nr_labels = model_t::nr_labels;
-    size_t nr_classifiers = model_t::nr_classifiers;
-
     model_t model(std::move(prob), svm::parameters<kernel_t> {0.01});
+    size_t nr_labels = model.nr_labels();
+    CHECK(nr_labels == 3);
+    size_t nr_classifiers = model.nr_classifiers();
+    CHECK(nr_classifiers == 3);
 
     using introspector_t = svm::linear_introspector<model_t::classifier_type>;
     auto check_slope = [&] (label_t l1, label_t l2, double s) {

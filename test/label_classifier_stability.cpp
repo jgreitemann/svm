@@ -26,7 +26,9 @@
 #include <cmath>
 #include <complex>
 #include <iostream>
+#include <numeric>
 #include <random>
+#include <type_traits>
 #include <vector>
 
 
@@ -39,6 +41,8 @@ SVM_LABEL_ADD(SOUTH_WEST)
 SVM_LABEL_ADD(SOUTH_EAST)
 SVM_LABEL_END()
 
+static_assert(!svm::traits::is_dynamic_label<quadrants::label>::value);
+
 TEST_CASE("static-multi-class") {
     using label_t = quadrants::label;
     using cmplx = std::complex<double>;
@@ -47,6 +51,8 @@ TEST_CASE("static-multi-class") {
     using C = typename problem_t::input_container_type;
 
     const size_t M = 10000;
+    const size_t N = 4;
+    const size_t NC = 6;
 
     std::mt19937 rng(42);
     std::uniform_real_distribution<double> uniform(-1, 1);
@@ -65,10 +71,11 @@ TEST_CASE("static-multi-class") {
     }
 
     using model_t = svm::model<kernel_t, label_t>;
-    const size_t nr_labels = model_t::nr_labels;
-    const size_t nr_classifiers = model_t::nr_classifiers;
-
     model_t model(std::move(prob), svm::parameters<kernel_t> {0.01});
+    const size_t nr_labels = model.nr_labels();
+    CHECK(nr_labels == N);
+    const size_t nr_classifiers = model.nr_classifiers();
+    CHECK(nr_classifiers == NC);
 
     std::vector<label_t> all_labels = {quadrants::NORTH_WEST,
                                        quadrants::SOUTH_EAST,
@@ -77,13 +84,12 @@ TEST_CASE("static-multi-class") {
     std::sort(all_labels.begin(), all_labels.end());
 
     auto labels = model.labels();
-    static_assert(std::is_same<decltype(labels), std::array<label_t, nr_labels>>::value);
+    static_assert(std::is_same<decltype(labels), std::array<label_t, N>>::value);
     CHECK(std::equal(all_labels.begin(), all_labels.end(), labels.begin()));
 
     auto classifiers = model.classifiers();
     static_assert(std::is_same<decltype(classifiers),
-                               std::array<model_t::classifier_type,
-                                          nr_classifiers>>::value);
+                               std::array<model_t::classifier_type, NC>>::value);
     auto check_consistency = [&] (size_t c, size_t i, size_t j) {
         CHECK(classifiers[c].labels().first  == labels[i]);
         CHECK(classifiers[c].labels().second == labels[j]);
@@ -105,7 +111,8 @@ TEST_CASE("static-multi-class") {
     for (size_t i = 0; i < 25; ++i) {
         C c {uniform(rng), uniform(rng)};
         auto res = model(c);
-        static_assert(std::is_same<decltype(res.second), std::array<double, nr_classifiers>>::value);
+        static_assert(std::is_same<decltype(res.second),
+                                   std::array<double, NC>>::value);
         for (size_t i = 0; i < nr_classifiers; ++i) {
             auto cres = classifiers[i](c);
             CHECK(res.first == cres.first);
@@ -122,7 +129,99 @@ TEST_CASE("static-multi-class") {
     }
 
     auto rhos = model.rho();
-    static_assert(std::is_same<decltype(rhos), std::array<double, nr_classifiers>>::value);
+    static_assert(std::is_same<decltype(rhos), std::array<double, NC>>::value);
+    for (size_t i = 0; i < nr_classifiers; ++i) {
+        double crho = classifiers[i].rho();
+        CHECK(rhos[i] == crho);
+    }
+}
+
+struct dynamic_label {
+    static const size_t label_dim = 1;
+    static const size_t nr_labels = svm::DYNAMIC;
+    dynamic_label () : val(0) {}
+    template <class Iterator,
+              typename Tag = typename std::iterator_traits<Iterator>::value_type>
+    dynamic_label (Iterator begin) : val (*begin) {}
+    dynamic_label (double x) : val(x) {}
+    operator double() const { return val; }
+    double const * begin() const { return &val; }
+    double const * end() const { return &val + 1; }
+    friend bool operator== (dynamic_label lhs, dynamic_label rhs) {
+        return lhs.val == rhs.val;
+    }
+    friend std::ostream & operator<< (std::ostream & os, dynamic_label l) {
+        return os << l.val;
+    }
+private:
+    double val;
+};
+
+static_assert(svm::traits::is_dynamic_label<dynamic_label>::value);
+
+TEST_CASE("dynamic-multi-class") {
+    using label_t = dynamic_label;
+    using cmplx = std::complex<double>;
+    using kernel_t = svm::kernel::linear;
+    using problem_t = svm::problem<kernel_t, label_t>;
+    using C = typename problem_t::input_container_type;
+
+    const size_t M = 10000;
+    const size_t N = 4;
+    const size_t NC = 6;
+
+    std::mt19937 rng(42);
+    std::uniform_real_distribution<double> uniform(-1, 1);
+
+    problem_t prob(2);
+    for (size_t i = 0; i < M; ++i) {
+        cmplx c {uniform(rng), uniform(rng)};
+        label_t l(std::floor(std::arg(c) / (2 * M_PI) * N));
+        prob.add_sample(C {c.real(), c.imag()}, l);
+    }
+
+    using model_t = svm::model<kernel_t, label_t>;
+    model_t model(std::move(prob), svm::parameters<kernel_t> {0.01});
+    const size_t nr_labels = model.nr_labels();
+    CHECK(nr_labels == N);
+    const size_t nr_classifiers = model.nr_classifiers();
+    CHECK(nr_classifiers == NC);
+
+    std::vector<label_t> all_labels(N);
+    std::iota(all_labels.begin(), all_labels.end(), std::floor(-0.5 * N));
+
+    auto labels = model.labels();
+    static_assert(std::is_same<decltype(labels), std::vector<label_t>>::value);
+    CHECK(std::equal(all_labels.begin(), all_labels.end(), labels.begin()));
+
+    auto classifiers = model.classifiers();
+    static_assert(std::is_same<decltype(classifiers),
+                               std::vector<model_t::classifier_type>>::value);
+    CHECK(classifiers.size() == nr_classifiers);
+
+    for (size_t i = 0; i < 25; ++i) {
+        C c {uniform(rng), uniform(rng)};
+        auto res = model(c);
+        static_assert(std::is_same<decltype(res.second), std::vector<double>>::value);
+        CHECK(res.second.size() == nr_classifiers);
+        for (size_t i = 0; i < nr_classifiers; ++i) {
+            auto cres = classifiers[i](c);
+            CHECK(res.first == cres.first);
+            CHECK(res.second[i] == cres.second);
+            auto cresl = model.classifier(classifiers[i].labels().first,
+                                          classifiers[i].labels().second)(c);
+            CHECK(res.first == cresl.first);
+            CHECK(res.second[i] == cresl.second);
+            auto cresr = model.classifier(classifiers[i].labels().second,
+                                          classifiers[i].labels().first)(c);
+            CHECK(res.first == cresr.first);
+            CHECK(res.second[i] == -cresr.second);
+        }
+    }
+
+    auto rhos = model.rho();
+    static_assert(std::is_same<decltype(rhos), std::vector<double>>::value);
+    CHECK(rhos.size() == nr_classifiers);
     for (size_t i = 0; i < nr_classifiers; ++i) {
         double crho = classifiers[i].rho();
         CHECK(rhos[i] == crho);
