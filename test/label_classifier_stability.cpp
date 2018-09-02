@@ -39,7 +39,7 @@ SVM_LABEL_ADD(SOUTH_WEST)
 SVM_LABEL_ADD(SOUTH_EAST)
 SVM_LABEL_END()
 
-TEST_CASE("4-class-classifiers") {
+TEST_CASE("static-multi-class") {
     using label_t = quadrants::label;
     using cmplx = std::complex<double>;
     using kernel_t = svm::kernel::linear;
@@ -65,8 +65,8 @@ TEST_CASE("4-class-classifiers") {
     }
 
     using model_t = svm::model<kernel_t, label_t>;
-    size_t nr_labels = model_t::nr_labels;
-    size_t nr_classifiers = model_t::nr_classifiers;
+    const size_t nr_labels = model_t::nr_labels;
+    const size_t nr_classifiers = model_t::nr_classifiers;
 
     model_t model(std::move(prob), svm::parameters<kernel_t> {0.01});
 
@@ -77,9 +77,13 @@ TEST_CASE("4-class-classifiers") {
     std::sort(all_labels.begin(), all_labels.end());
 
     auto labels = model.labels();
-    std::equal(all_labels.begin(), all_labels.end(), labels.begin());
+    static_assert(std::is_same<decltype(labels), std::array<label_t, nr_labels>>::value);
+    CHECK(std::equal(all_labels.begin(), all_labels.end(), labels.begin()));
 
     auto classifiers = model.classifiers();
+    static_assert(std::is_same<decltype(classifiers),
+                               std::array<model_t::classifier_type,
+                                          nr_classifiers>>::value);
     auto check_consistency = [&] (size_t c, size_t i, size_t j) {
         CHECK(classifiers[c].labels().first  == labels[i]);
         CHECK(classifiers[c].labels().second == labels[j]);
@@ -101,6 +105,7 @@ TEST_CASE("4-class-classifiers") {
     for (size_t i = 0; i < 25; ++i) {
         C c {uniform(rng), uniform(rng)};
         auto res = model(c);
+        static_assert(std::is_same<decltype(res.second), std::array<double, nr_classifiers>>::value);
         for (size_t i = 0; i < nr_classifiers; ++i) {
             auto cres = classifiers[i](c);
             CHECK(res.first == cres.first);
@@ -117,6 +122,7 @@ TEST_CASE("4-class-classifiers") {
     }
 
     auto rhos = model.rho();
+    static_assert(std::is_same<decltype(rhos), std::array<double, nr_classifiers>>::value);
     for (size_t i = 0; i < nr_classifiers; ++i) {
         double crho = classifiers[i].rho();
         CHECK(rhos[i] == crho);
