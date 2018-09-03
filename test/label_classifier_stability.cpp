@@ -86,6 +86,9 @@ TEST_CASE("4-class-classifiers") {
         auto clss = model.classifier(labels[i], labels[j]);
         CHECK(clss.labels().first  == labels[i]);
         CHECK(clss.labels().second == labels[j]);
+        auto clssr = model.classifier(labels[j], labels[i]);
+        CHECK(clssr.labels().first  == labels[j]);
+        CHECK(clssr.labels().second == labels[i]);
     };
 
     check_consistency(0, 0, 1);
@@ -102,6 +105,14 @@ TEST_CASE("4-class-classifiers") {
             auto cres = classifiers[i](c);
             CHECK(res.first == cres.first);
             CHECK(res.second[i] == cres.second);
+            auto cresl = model.classifier(classifiers[i].labels().first,
+                                          classifiers[i].labels().second)(c);
+            CHECK(res.first == cresl.first);
+            CHECK(res.second[i] == cresl.second);
+            auto cresr = model.classifier(classifiers[i].labels().second,
+                                          classifiers[i].labels().first)(c);
+            CHECK(res.first == cresr.first);
+            CHECK(res.second[i] == -cresr.second);
         }
     }
 
