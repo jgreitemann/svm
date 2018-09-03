@@ -89,7 +89,7 @@ namespace svm {
                     return old;
                 }
                 double coef () const {
-                    return *yalpha;
+                    return *yalpha * swapped;
                 }
 
                 template <typename Problem = problem_t,
@@ -123,12 +123,15 @@ namespace svm {
                 const_iterator (double * yalpha_1, struct svm_node ** sv_1,
                                 double * yalpha_1_end, struct svm_node ** sv_1_end,
                                 double * yalpha_2, struct svm_node ** sv_2,
+                                int swapped,
                                 problem_t const& prob)
                     : yalpha(yalpha_1), sv(sv_1),
                       yalpha_1_end(yalpha_1_end), sv_1_end(sv_1_end),
-                      yalpha_2(yalpha_2), sv_2(sv_2), prob(prob) {}
+                      yalpha_2(yalpha_2), sv_2(sv_2),
+                      swapped(swapped), prob(prob) {}
                 double * yalpha, * yalpha_1_end, * yalpha_2;
                 struct svm_node ** sv, **sv_1_end, **sv_2;
+                int swapped;
                 problem_t const& prob;
             };
 
@@ -162,6 +165,7 @@ namespace svm {
                     parent.m->SV + k1_offset + parent.m->nSV[k1],
                     parent.m->sv_coef[k1] + k2_offset,
                     parent.m->SV + k2_offset,
+                    swapped,
                     parent.prob
                 };
             }
@@ -174,6 +178,7 @@ namespace svm {
                     parent.m->SV + k1_offset + parent.m->nSV[k1],
                     parent.m->sv_coef[k1] + k2_offset,
                     parent.m->SV + k2_offset,
+                    swapped,
                     parent.prob
                 };
             }
@@ -313,7 +318,7 @@ namespace svm {
         template <typename..., size_t NC = nr_classifiers,
                   typename = std::enable_if_t<NC == 1>>
         classifier_type classifier () const {
-            return classifier_type {*this, 0, 1};
+            return classifier_type {*this, perm_inv[0], perm_inv[1]};
         }
 
         template <typename Problem = problem_t,
