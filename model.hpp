@@ -558,16 +558,15 @@ namespace svm {
 
         template <size_t... R>
         classifier_arr_t classifiers_impl (std::index_sequence<R...>) const {
-            return {
-                [&](size_t r) -> classifier_type {
-                    size_t r1 = 0, r2 = r + 1;
-                    while (r2 >= nr_labels()) {
-                        ++r1;
-                        r2 -= nr_labels() - 1 - r1;
-                    }
-                    return {*this, perm_inv[r1], perm_inv[r2]};
-                }(R)...
+            auto get_cl = [&](size_t r) -> classifier_type {
+                size_t r1 = 0, r2 = r + 1;
+                while (r2 >= nr_labels()) {
+                    ++r1;
+                    r2 -= nr_labels() - 1 - r1;
+                }
+                return {*this, perm_inv[r1], perm_inv[r2]};
             };
+            return {get_cl(R)...};
         }
 
         problem_t prob;
