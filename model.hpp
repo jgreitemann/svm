@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "container_factory.hpp"
 #include "dataset.hpp"
 #include "problem.hpp"
 #include "parameters.hpp"
@@ -34,83 +35,6 @@
 
 
 namespace svm {
-
-    namespace detail {
-
-        template <typename ContiguousContainer>
-        struct container_factory {
-            using value_type = typename ContiguousContainer::value_type;
-            static ContiguousContainer create(size_t size) {
-                return ContiguousContainer(size);
-            }
-
-            template <typename ContiguousIterator>
-            static ContiguousContainer copy(ContiguousIterator begin, ContiguousIterator end) {
-                return ContiguousContainer(begin, end);
-            }
-
-            static value_type* ptr(ContiguousContainer& c) {
-                return c.data();
-            }
-
-            static value_type const* ptr(ContiguousContainer const& c) {
-                return c.data();
-            }
-        };
-
-        template <typename T, size_t N>
-        struct container_factory<std::array<T, N>> {
-            static std::array<T,N> create(size_t) {
-                return {};
-            }
-
-            template <typename ContiguousIterator,
-                      typename Indices = std::make_index_sequence<N>>
-            static std::array<T,N> copy(ContiguousIterator begin, ContiguousIterator end) {
-                if (std::distance(begin, end) != N)
-                    throw std::invalid_argument("specified range does not match array size");
-                return copy_impl(begin, Indices{});
-            }
-
-            static T* ptr(std::array<T,N>& c) {
-                return c.data();
-            }
-
-            static T const* ptr(std::array<T,N> const& c) {
-                return c.data();
-            }
-        private:
-            template <typename ContiguousIterator,
-                      size_t... I>
-            static std::array<T,N> copy_impl(ContiguousIterator begin,
-                                       std::index_sequence<I...>) {
-                return {begin[I]...};
-            }
-        };
-
-        template <>
-        struct container_factory<double> {
-            static double create(size_t) {
-                return {};
-            }
-
-            template <typename ContiguousIterator>
-            static double copy(ContiguousIterator begin, ContiguousIterator end) {
-                if (std::distance(begin, end) != 1)
-                    throw std::invalid_argument("specified range exceed one element");
-                return *begin;
-            }
-
-            static double* ptr(double& c) {
-                return &c;
-            }
-
-            static double const* ptr(double const& c) {
-                return &c;
-            }
-        };
-
-    }
 
     template <class Kernel, class Label = double>
     class model {
