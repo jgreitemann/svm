@@ -478,7 +478,9 @@ namespace svm {
             }
         }
 
-        void permute(double & a) const { /* pass */ }
+        void permute(double & a) const {
+            a *= permc_signs[0];
+        }
 
         template <size_t... R>
         classifier_arr_t classifiers_impl (std::index_sequence<R...>) const {

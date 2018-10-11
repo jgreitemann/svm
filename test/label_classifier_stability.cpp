@@ -34,6 +34,11 @@
 
 using svm::detail::basic_problem;
 
+SVM_LABEL_BEGIN(directions, 2)
+SVM_LABEL_ADD(LEFT)
+SVM_LABEL_ADD(RIGHT)
+SVM_LABEL_END()
+
 SVM_LABEL_BEGIN(quadrants, 4)
 SVM_LABEL_ADD(NORTH_EAST)
 SVM_LABEL_ADD(NORTH_WEST)
@@ -42,6 +47,114 @@ SVM_LABEL_ADD(SOUTH_EAST)
 SVM_LABEL_END()
 
 static_assert(!svm::traits::is_dynamic_label<quadrants::label>::value);
+
+TEST_CASE("static-binary-class") {
+    using label_t = directions::label;
+    using cmplx = std::complex<double>;
+    using kernel_t = svm::kernel::linear;
+    using problem_t = svm::problem<kernel_t, label_t>;
+    using C = typename problem_t::input_container_type;
+
+    const size_t M = 10000;
+    const size_t N = 2;
+    const size_t NC = 1;
+
+    std::mt19937 rng(42);
+    std::uniform_real_distribution<double> uniform(-1, 1);
+
+    problem_t prob1(2);
+    problem_t prob2(2);
+    for (size_t i = 0; i < M; ++i) {
+        cmplx c {uniform(rng), uniform(rng)};
+        auto l = [c] {
+            double angle = std::arg(c);
+            if (angle < 0)
+                return std::make_pair(directions::LEFT, directions::RIGHT);
+            return std::make_pair(directions::RIGHT, directions::LEFT);
+        } ();
+        prob1.add_sample(C {c.real(), c.imag()}, l.first);
+        prob2.add_sample(C {c.real(), c.imag()}, l.second);
+    }
+
+    using model_t = svm::model<kernel_t, label_t>;
+    model_t model1(std::move(prob1), svm::parameters<kernel_t> {0.01});
+    model_t model2(std::move(prob2), svm::parameters<kernel_t> {0.01});
+    CHECK(model1.nr_labels() == N);
+    CHECK(model2.nr_classifiers() == NC);
+
+    std::vector<label_t> all_labels = {directions::LEFT, directions::RIGHT};
+    std::sort(all_labels.begin(), all_labels.end());
+
+    auto labels = model1.labels();
+    static_assert(std::is_same<decltype(labels), std::array<label_t, N>>::value);
+    CHECK(std::equal(all_labels.begin(), all_labels.end(), labels.begin()));
+    labels = model2.labels();
+    CHECK(std::equal(all_labels.begin(), all_labels.end(), labels.begin()));
+
+    auto classifier1 = model1.classifier();
+    auto classifier2 = model2.classifier();
+    CHECK(classifier1.labels().first == labels[0]);
+    CHECK(classifier1.labels().second == labels[1]);
+    CHECK(classifier2.labels().first == labels[0]);
+    CHECK(classifier2.labels().second == labels[1]);
+    {
+        auto clss1 = model1.classifier(labels[0], labels[1]);
+        CHECK(clss1.labels().first == labels[0]);
+        CHECK(clss1.labels().second == labels[1]);
+        auto clss2 = model2.classifier(labels[0], labels[1]);
+        CHECK(clss2.labels().first == labels[0]);
+        CHECK(clss2.labels().second == labels[1]);
+        auto clssr1 = model1.classifier(labels[1], labels[0]);
+        CHECK(clssr1.labels().first == labels[1]);
+        CHECK(clssr1.labels().second == labels[0]);
+        auto clssr2 = model2.classifier(labels[1], labels[0]);
+        CHECK(clssr2.labels().first == labels[1]);
+        CHECK(clssr2.labels().second == labels[0]);
+    }
+
+    for (size_t i = 0; i < 25; ++i) {
+        C c {uniform(rng), uniform(rng)};
+        auto res1 = model1(c);
+        auto res2 = model2(c);
+        static_assert(std::is_same<decltype(res1.second),
+                                   double>::value);
+        auto cres1 = classifier1(c);
+        auto cres2 = classifier2(c);
+        CHECK(res1.first == cres1.first);
+        CHECK(res1.second == cres1.second);
+        CHECK(res2.first == cres2.first);
+        CHECK(res2.second == cres2.second);
+        CHECK(res1.first != res2.first);
+        CHECK(res1.second == -res2.second);
+        auto cresl1 = model1.classifier(classifier1.labels().first,
+                                        classifier1.labels().second)(c);
+        auto cresl2 = model2.classifier(classifier2.labels().first,
+                                        classifier2.labels().second)(c);
+        CHECK(res1.first == cresl1.first);
+        CHECK(res1.second == cresl1.second);
+        CHECK(res2.first == cresl2.first);
+        CHECK(res2.second == cresl2.second);
+        CHECK(cresl1.first != cresl2.first);
+        CHECK(cresl1.second == -cresl2.second);
+        auto cresr1 = model1.classifier(classifier1.labels().second,
+                                        classifier1.labels().first)(c);
+        auto cresr2 = model2.classifier(classifier2.labels().second,
+                                        classifier2.labels().first)(c);
+        CHECK(res1.first == cresr1.first);
+        CHECK(res1.second == -cresr1.second);
+        CHECK(res2.first == cresr2.first);
+        CHECK(res2.second == -cresr2.second);
+        CHECK(cresr1.first != cresr2.first);
+        CHECK(res1.second == cresr2.second);
+    }
+
+    auto rho1 = model1.rho();
+    auto rho2 = model2.rho();
+    static_assert(std::is_same<decltype(rho1), double>::value);
+    CHECK(rho1 == model1.classifier().rho());
+    CHECK(rho2 == model2.classifier().rho());
+    CHECK(rho1 == -rho2);
+}
 
 TEST_CASE("static-multi-class") {
     using label_t = quadrants::label;
