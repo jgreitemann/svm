@@ -130,10 +130,15 @@ namespace svm {
                                 double * yalpha_2, struct svm_node ** sv_2,
                                 int swapped,
                                 problem_t const& prob)
-                    : yalpha(yalpha_1), sv(sv_1),
-                      yalpha_1_end(yalpha_1_end), sv_1_end(sv_1_end),
-                      yalpha_2(yalpha_2), sv_2(sv_2),
-                      swapped(swapped), prob(prob) {}
+                    : yalpha(yalpha_1)
+                    , yalpha_1_end(yalpha_1_end)
+                    , yalpha_2(yalpha_2)
+                    , sv(sv_1)
+                    , sv_1_end(sv_1_end)
+                    , sv_2(sv_2)
+                    , swapped(swapped)
+                    , prob(prob)
+                {}
                 double * yalpha, * yalpha_1_end, * yalpha_2;
                 struct svm_node ** sv, **sv_1_end, **sv_2;
                 int swapped;
@@ -227,10 +232,10 @@ namespace svm {
             }
 
         private:
+            model const& parent;
             size_t k1, k2;
             size_t k1_offset, k2_offset, k_comb;
             int swapped;
-            model const& parent;
         };
 
         size_t nr_labels() const {

@@ -107,7 +107,7 @@ namespace svm {
             return os << NAMES[l.val];                                  \
         }                                                               \
     private:                                                            \
-        short val;                                                      \
+        unsigned short val;                                             \
     };                                                                  \
     static short i = 0;
 

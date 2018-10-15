@@ -38,7 +38,7 @@ namespace combinatorics {
                 return 1;
             --end;
             T c = 1, i = 1;
-            auto m = M - 1;
+            T m = M - 1;
             while (n > *end) {
                 while (i > *begin) {
                     --m;

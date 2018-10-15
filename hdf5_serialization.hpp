@@ -161,8 +161,8 @@ namespace svm {
             std::vector<int> label;
             ar["label"] >> label;
 
-            int nr_class = label.size();
-            int nr_sum = rho.size();
+            size_t nr_class = label.size();
+            size_t nr_sum = rho.size();
 
             if (nr_sum != nr_class * (nr_class-1) / 2)
                 throw std::runtime_error("inconsistent data length");
@@ -208,7 +208,7 @@ namespace svm {
             boost::multi_array<double,2> SVm;
             ar["SV"] >> SVm;
 
-            int l = sv_coefm.shape()[0];
+            size_t l = sv_coefm.shape()[0];
             if (sv_coefm.shape()[1] != nr_class-1)
                 throw std::runtime_error("inconsistent data length");
             if (SVm.shape()[0] != l)
@@ -219,9 +219,9 @@ namespace svm {
             model_.m->l = l;
 
             model_.m->sv_coef = (double **)malloc(sizeof(double *) * (nr_class-1));
-            for (int j = 0; j < nr_class-1; ++j) {
+            for (size_t j = 0; j < nr_class-1; ++j) {
                 model_.m->sv_coef[j] = (double *)malloc(sizeof(double) * l);
-                for (int i = 0; i < l; ++i) {
+                for (size_t i = 0; i < l; ++i) {
                     model_.m->sv_coef[j][i] = sv_coefm[i][j];
                 }
             }
@@ -229,7 +229,7 @@ namespace svm {
             model_.m->SV = (struct svm_node **)malloc(sizeof(struct svm_node *) * l);
             struct svm_node * SVmem = (struct svm_node *)malloc(sizeof(struct svm_node) * l * (expected_size + 1));
             size_t start_index = Model::problem_t::is_precomputed ? 0 : 1;
-            for (int i = 0; i < l; ++i) {
+            for (size_t i = 0; i < l; ++i) {
                 svm::dataset ds(SVm[i].begin(), SVm[i].end(), start_index);
                 model_.m->SV[i] = SVmem + i * (expected_size + 1);
                 std::copy(ds.data().begin(), ds.data().end(), model_.m->SV[i]);
