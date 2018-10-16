@@ -281,7 +281,7 @@ namespace svm {
             }
             m = svm_train(&svm_prob, params_.svm_params_ptr());
             if (!traits::is_dynamic_label<Label>::value
-                && m->nr_class != traits::label_traits<Label>::nr_labels)
+                && size_t(m->nr_class) != traits::label_traits<Label>::nr_labels)
             {
                 throw std::runtime_error("inconsistent number of label values");
             }
