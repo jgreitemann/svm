@@ -1,6 +1,6 @@
 /*   Support Vector Machine Library Wrappers
- *   Copyright (C) 2018  Jonas Greitemann
- *  
+ *   Copyright (C) 2018-2019  Jonas Greitemann
+ *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation, either version 3 of the License, or
@@ -59,7 +59,7 @@ namespace svm {
     struct linear_introspector {
 
         linear_introspector(Classifier const& cl) : classifier(cl) {}
-        
+
         double coefficient(size_t i) const {
             double c = 0;
             for (auto p : classifier) {
