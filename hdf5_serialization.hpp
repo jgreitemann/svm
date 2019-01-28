@@ -1,6 +1,6 @@
 /*   Support Vector Machine Library Wrappers
  *   Copyright (C) 2018  Jonas Greitemann
- *  
+ *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation, either version 3 of the License, or
@@ -18,6 +18,9 @@
 
 #pragma once
 
+#include "dataset.hpp"
+#include "label.hpp"
+#include "serializer.hpp"
 #include "svm.h"
 
 #include <algorithm>
