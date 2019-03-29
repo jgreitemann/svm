@@ -419,6 +419,10 @@ namespace svm {
             return params_;
         }
 
+        bool empty() const {
+            return m == nullptr;
+        }
+
         template <typename Tag, typename Model>
         friend struct model_serializer;
 
