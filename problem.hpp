@@ -33,6 +33,13 @@ namespace svm {
 
     namespace detail {
 
+        struct always {
+            template <typename... Args>
+            constexpr bool operator()(Args const&...) const noexcept {
+                return true;
+            }
+        };
+
         template <class Container, class Label>
         class basic_problem {
         public:
@@ -45,10 +52,15 @@ namespace svm {
             basic_problem(basic_problem &&) = default;
             basic_problem & operator= (basic_problem &&) = default;
 
-            template <class OtherProblem, typename UnaryFunction>
-            basic_problem(OtherProblem && other, UnaryFunction label_map) {
+            template <class OtherProblem,
+                      typename UnaryFunction,
+                      typename UnaryPredicate = always>
+            basic_problem(OtherProblem && other,
+                          UnaryFunction label_map,
+                          UnaryPredicate filter = {})
+            {
                 dimension = other.dimension;
-                append_problem(std::move(other), label_map);
+                append_problem(std::move(other), label_map, filter);
             }
 
             void add_sample(Container && ds, Label label) {
@@ -61,20 +73,39 @@ namespace svm {
                 labels.push_back(label);
             }
 
-            template <class OtherProblem, typename UnaryFunction>
-            void append_problem (OtherProblem && other, UnaryFunction label_map) {
+            template <class OtherProblem,
+                      typename UnaryFunction,
+                      typename UnaryPredicate = always>
+            void append_problem (OtherProblem && other,
+                                 UnaryFunction label_map,
+                                 UnaryPredicate filter = {})
+            {
                 if (dimension != other.dimension)
                     throw std::logic_error("incompatible problem dimensions");
-                orig_data.reserve(orig_data.size() + other.orig_data.size());
-                orig_data.insert(orig_data.end(),
-                                 std::make_move_iterator(other.orig_data.begin()),
-                                 std::make_move_iterator(other.orig_data.end()));
-                other.orig_data.clear();
+
+                // conditionally copy transformed labels
+                std::vector<Label> transformed_labels;
+                transformed_labels.reserve(other.labels.size());
                 std::transform(other.labels.begin(),
-                               other.labels.end(),
-                               std::back_inserter(labels),
-                               label_map);
+                    other.labels.end(),
+                    std::back_inserter(transformed_labels),
+                    label_map);
+                std::copy_if(transformed_labels.begin(),
+                    transformed_labels.end(),
+                    std::back_inserter(labels),
+                    filter);
                 other.labels.clear();
+
+                // conditionally copy data accordingly
+                orig_data.reserve(labels.size());
+                auto label_it = transformed_labels.begin();
+                std::copy_if(std::make_move_iterator(other.orig_data.begin()),
+                    std::make_move_iterator(other.orig_data.end()),
+                    std::back_inserter(orig_data),
+                    [&](Container const&) {
+                        return filter(*(label_it++));
+                    });
+                other.orig_data.clear();
             }
 
             void append_problem (basic_problem && other) {
@@ -120,9 +151,15 @@ namespace svm {
             patch_through_problem(patch_through_problem &&) = default;
             patch_through_problem & operator= (patch_through_problem &&) = default;
 
-            template <class OtherProblem, typename UnaryFunction>
-            patch_through_problem(OtherProblem && other, UnaryFunction map)
-                : basic_problem<dataset, Label>(std::move(other), map) {}
+            template <class OtherProblem,
+                      typename UnaryFunction,
+                      typename UnaryPredicate = always>
+            patch_through_problem(OtherProblem && other,
+                                  UnaryFunction map,
+                                  UnaryPredicate filter = {})
+                : basic_problem<dataset, Label>(std::move(other), map, filter)
+            {
+            }
 
             template <typename ..., typename L = Label,
                       typename = typename std::enable_if<traits::is_convertible_label<L>::value>::type>
@@ -158,9 +195,16 @@ namespace svm {
             precompute_kernel_problem(precompute_kernel_problem &&) = default;
             precompute_kernel_problem & operator= (precompute_kernel_problem &&) = default;
 
-            template <class OtherProblem, typename UnaryFunction>
-            precompute_kernel_problem(OtherProblem && other, UnaryFunction map)
-                : basic_problem<Container, Label>(std::move(other), map), kernel(std::move(other.kernel)) {}
+            template <class OtherProblem,
+                      typename UnaryFunction,
+                      typename UnaryPredicate = always>
+            precompute_kernel_problem(OtherProblem && other,
+                                      UnaryFunction map,
+                                      UnaryPredicate filter = {})
+                : basic_problem<Container, Label>(std::move(other), map, filter)
+                , kernel(std::move(other.kernel))
+            {
+            }
 
             template <typename = typename std::enable_if<std::is_default_constructible<Kernel>::value>::type>
             precompute_kernel_problem (size_t dim)
