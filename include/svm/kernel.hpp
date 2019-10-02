@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "kernel/linear.hpp"
-#include "kernel/polynomial.hpp"
-#include "kernel/rbf.hpp"
-#include "kernel/sigmoid.hpp"
+#include <svm/kernel/linear.hpp>
+#include <svm/kernel/polynomial.hpp>
+#include <svm/kernel/rbf.hpp>
+#include <svm/kernel/sigmoid.hpp>

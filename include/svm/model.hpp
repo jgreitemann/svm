@@ -18,13 +18,6 @@
 
 #pragma once
 
-#include "container_factory.hpp"
-#include "dataset.hpp"
-#include "problem.hpp"
-#include "parameters.hpp"
-#include "serializer.hpp"
-#include "svm.h"
-
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -32,6 +25,14 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+
+#include <svm/dataset.hpp>
+#include <svm/problem.hpp>
+#include <svm/parameters.hpp>
+#include <svm/detail/container_factory.hpp>
+#include <svm/libsvm/svm.h>
+#include <svm/serialization/serializer.hpp>
+#include <svm/traits/label_traits.hpp>
 
 
 namespace svm {
@@ -424,7 +425,7 @@ namespace svm {
         }
 
         template <typename Tag, typename Model>
-        friend struct model_serializer;
+        friend struct serialization::model_serializer;
 
     private:
         void init_perm () {

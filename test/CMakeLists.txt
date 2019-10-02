@@ -1,5 +1,3 @@
-include_directories(doctest)
-
 add_executable(combinatorics combinatorics.cpp)
 add_test(combinatorics combinatorics)
 

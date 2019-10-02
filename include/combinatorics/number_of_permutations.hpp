@@ -18,12 +18,12 @@
 
 #pragma once
 
-#include <combinatorics/multinomial.hpp>
-
 #include <algorithm>
 #include <iterator>
 #include <map>
 #include <utility>
+
+#include <combinatorics/multinomial.hpp>
 
 
 namespace combinatorics {

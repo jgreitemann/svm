@@ -18,16 +18,23 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "doctest.h"
-#include "svm-wrapper.hpp"
-#include "label.hpp"
+#include "doctest/doctest.h"
 #include "test_problems_equal.hpp"
 
 #include <complex>
 #include <iostream>
+#include <iterator>
 #include <random>
 #include <type_traits>
+#include <utility>
 #include <vector>
+
+#include <svm/label.hpp>
+#include <svm/model.hpp>
+#include <svm/parameters.hpp>
+#include <svm/problem.hpp>
+#include <svm/detail/basic_problem.hpp>
+#include <svm/kernel/linear.hpp>
 
 
 using svm::detail::basic_problem;

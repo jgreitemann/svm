@@ -18,8 +18,12 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
+#include "doctest/doctest.h"
 #include "serialization_test.hpp"
-#include "kernel/linear_precomputed.hpp"
+
+#include <svm/kernel/linear.hpp>
+#include <svm/kernel/linear_precomputed.hpp>
+#include <svm/serialization/ascii.hpp>
 
 
 TEST_CASE("model-serializer-ascii-builtin") {

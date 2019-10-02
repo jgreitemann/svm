@@ -18,11 +18,13 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "doctest.h"
-#include "dataset.hpp"
+#include "doctest/doctest.h"
 
 #include <iostream>
 #include <vector>
+
+#include <svm/dataset.hpp>
+
 
 void test_data_view (std::vector<double> const& a) {
     std::vector<double> b;

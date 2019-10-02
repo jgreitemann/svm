@@ -18,8 +18,7 @@
 
 #pragma once
 
-#include "doctest.h"
-#include "svm-wrapper.hpp"
+#include "doctest/doctest.h"
 #include "hyperplane_model.hpp"
 #include "model_test.hpp"
 #include "test_problems_equal.hpp"
@@ -28,6 +27,11 @@
 #include <random>
 #include <utility>
 #include <vector>
+
+#include <svm/model.hpp>
+#include <svm/parameters.hpp>
+#include <svm/problem.hpp>
+#include <svm/serialization/serializer.hpp>
 
 
 template <class Kernel, class Tag>
@@ -40,11 +44,11 @@ void model_serializer_test (size_t N, size_t M, double threshold, std::string co
         fill_problem<svm::problem<Kernel>>(M, rng, trial_model),
         params);
 
-    svm::model_serializer<Tag, svm::model<Kernel>> saver(empirical_model);
+    svm::serialization::model_serializer<Tag, svm::model<Kernel>> saver(empirical_model);
     saver.save(name);
 
     svm::model<Kernel> restored_model;
-    svm::model_serializer<Tag, svm::model<Kernel>> loader(restored_model);
+    svm::serialization::model_serializer<Tag, svm::model<Kernel>> loader(restored_model);
     loader.load(name);
 
     double success_rate = test_model(M, rng, trial_model, restored_model);
@@ -81,11 +85,11 @@ void problem_serializer_test (size_t N, size_t M, std::string const& name) {
     auto label_map = [] (double l) -> custom_label { return { l, (l+2)*(l+2) }; };
     auto mapped_prob = mapped_problem_t(std::move(orig_prob), label_map);
 
-    svm::problem_serializer<Tag, mapped_problem_t> saver(mapped_prob);
+    svm::serialization::problem_serializer<Tag, mapped_problem_t> saver(mapped_prob);
     saver.save(name);
 
     mapped_problem_t restored_prob(0);
-    svm::problem_serializer<Tag, mapped_problem_t> loader(restored_prob);
+    svm::serialization::problem_serializer<Tag, mapped_problem_t> loader(restored_prob);
     loader.load(name);
 
     test_problems_equal(mapped_prob, restored_prob);

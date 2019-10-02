@@ -17,12 +17,19 @@
  */
 
 #pragma once
-#include "svm-wrapper.hpp"
+
+#include "doctest/doctest.h"
 
 #include <iostream>
 #include <random>
+#include <tuple>
 #include <utility>
 #include <vector>
+
+#include <svm/model.hpp>
+#include <svm/parameters.hpp>
+#include <svm/problem.hpp>
+
 
 template <class Problem, class TrialModel, class RNG_t>
 Problem fill_problem (size_t M, RNG_t & rng,

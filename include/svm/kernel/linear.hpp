@@ -18,21 +18,26 @@
 
 #pragma once
 
-#include "problem.hpp"
-#include "parameters.hpp"
-#include "model.hpp"
-#include "svm.h"
-
 #include <algorithm>
 #include <stdexcept>
 #include <utility>
+
+#include <svm/model.hpp>
+#include <svm/problem.hpp>
+#include <svm/parameters.hpp>
+
+#include <svm/detail/basic_parameters.hpp>
+#include <svm/detail/patch_through_problem.hpp>
+
+#include <svm/libsvm/svm.h>
 
 
 namespace svm {
 
     namespace kernel {
 
-        struct linear;
+        struct linear {
+        };
 
     }
 

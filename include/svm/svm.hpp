@@ -18,11 +18,11 @@
 
 #pragma once
 
-#include "dataset.hpp"
-#include "label.hpp"
-#include "problem.hpp"
-#include "parameters.hpp"
-#include "kernel.hpp"
-#include "model.hpp"
-#include "serializer.hpp"
+#include <svm/dataset.hpp>
+#include <svm/kernel.hpp>
+#include <svm/label.hpp>
+#include <svm/model.hpp>
+#include <svm/problem.hpp>
+#include <svm/parameters.hpp>
+#include <svm/serialization/ascii.hpp>
 

@@ -18,11 +18,18 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "doctest.h"
-#include "svm-wrapper.hpp"
+#include "doctest/doctest.h"
 
 #include <array>
 #include <iostream>
+#include <tuple>
+#include <utility>
+
+#include <svm/dataset.hpp>
+#include <svm/model.hpp>
+#include <svm/parameters.hpp>
+#include <svm/problem.hpp>
+#include <svm/kernel/polynomial.hpp>
 
 
 using kernel_t = svm::kernel::polynomial<2>;

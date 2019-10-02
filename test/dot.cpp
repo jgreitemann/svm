@@ -18,10 +18,11 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "doctest.h"
-#include "dataset.hpp"
+#include "doctest/doctest.h"
 
 #include <vector>
+
+#include <svm/dataset.hpp>
 
 
 TEST_CASE("dot") {

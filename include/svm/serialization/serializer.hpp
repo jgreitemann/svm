@@ -20,6 +20,7 @@
 
 
 namespace svm {
+namespace serialization {
 
     template <typename Tag, typename Model>
     struct model_serializer;
@@ -28,5 +29,4 @@ namespace svm {
     struct problem_serializer;
 
 }
-
-#include "ascii_serialization.hpp"
+}

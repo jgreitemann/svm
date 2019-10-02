@@ -18,16 +18,20 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "doctest.h"
-#include "svm-wrapper.hpp"
-#include "kernel/linear_precomputed.hpp"
+#include "doctest/doctest.h"
 #include "hyperplane_model.hpp"
 #include "model_test.hpp"
 
 #include <cmath>
-#include <iostream>
 #include <random>
+#include <utility>
 #include <vector>
+
+#include <svm/kernel/linear.hpp>
+#include <svm/kernel/linear_precomputed.hpp>
+#include <svm/model.hpp>
+#include <svm/parameters.hpp>
+#include <svm/problem.hpp>
 
 
 template <class Kernel>

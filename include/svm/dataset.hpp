@@ -18,10 +18,11 @@
 
 #pragma once
 
-#include "svm.h"
-
+#include <initializer_list>
 #include <iterator>
 #include <vector>
+
+#include <svm/libsvm/svm.h>
 
 
 namespace svm {

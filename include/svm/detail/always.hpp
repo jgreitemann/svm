@@ -20,8 +20,14 @@
 
 
 namespace svm {
+    namespace detail {
 
-    template <class Kernel>
-    class parameters;
+        struct always {
+            template <typename... Args>
+            constexpr bool operator()(Args &&...) const noexcept {
+                return true;
+            }
+        };
 
+    }
 }

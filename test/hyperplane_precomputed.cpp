@@ -18,12 +18,13 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "doctest.h"
-#include "model_test.hpp"
+#include "doctest/doctest.h"
 #include "hyperplane_model.hpp"
-#include "kernel/linear_precomputed.hpp"
+#include "model_test.hpp"
 
 #include <random>
+
+#include <svm/kernel/linear_precomputed.hpp>
 
 
 TEST_CASE("hyperplane-precomputed") {

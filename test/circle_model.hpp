@@ -18,13 +18,11 @@
 
 #pragma once
 
-#include "dataset.hpp"
-
 #include <cmath>
-#include <random>
-#include <stdexcept>
+#include <iterator>
 #include <utility>
-#include <vector>
+
+#include <svm/dataset.hpp>
 
 
 class circle_model {

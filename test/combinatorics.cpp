@@ -18,10 +18,12 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "doctest.h"
-#include "combinatorics.hpp"
+#include "doctest/doctest.h"
 
+#include <utility>
 #include <vector>
+
+#include <combinatorics/combinatorics.hpp>
 
 using namespace combinatorics;
 

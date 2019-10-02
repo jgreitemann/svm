@@ -18,9 +18,12 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
+#include "doctest/doctest.h"
 #include "serialization_test.hpp"
-#include "kernel/linear_precomputed.hpp"
-#include "hdf5_serialization.hpp"
+
+#include <svm/kernel/linear.hpp>
+#include <svm/kernel/linear_precomputed.hpp>
+#include <svm/serialization/hdf5.hpp>
 
 
 TEST_CASE("model-serializer-hdf5-builtin") {

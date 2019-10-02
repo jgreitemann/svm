@@ -18,11 +18,15 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "doctest.h"
+#include "doctest/doctest.h"
 #include "model_test.hpp"
 #include "circle_model.hpp"
 
 #include <random>
+
+#include <svm/kernel/polynomial.hpp>
+#include <svm/kernel/rbf.hpp>
+#include <svm/kernel/sigmoid.hpp>
 
 
 TEST_CASE("circle-poly2-center") {
@@ -48,4 +52,3 @@ TEST_CASE("circle-sigmoid") {
     circle_model trial_model({0.3, 0.2}, 0.3);
     model_test<svm::kernel::sigmoid>(1000, 0.8, trial_model, rng, 0.45);
 }
-

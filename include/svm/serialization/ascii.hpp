@@ -18,9 +18,6 @@
 
 #pragma once
 
-#include "serializer.hpp"
-#include "svm.h"
-
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -29,8 +26,17 @@
 #include <utility>
 #include <vector>
 
+#include <svm/dataset.hpp>
+
+#include <svm/libsvm/svm.h>
+
+#include <svm/serialization/serializer.hpp>
+
+#include <svm/traits/label_traits.hpp>
+
 
 namespace svm {
+namespace serialization {
 
     struct ascii_tag;
 
@@ -142,4 +148,6 @@ namespace svm {
         bool full;
     };
 
+}
+    using serialization::ascii_tag;
 }

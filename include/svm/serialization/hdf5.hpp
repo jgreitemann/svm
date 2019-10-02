@@ -18,13 +18,7 @@
 
 #pragma once
 
-#include "dataset.hpp"
-#include "label.hpp"
-#include "serializer.hpp"
-#include "svm.h"
-
 #include <algorithm>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -32,11 +26,20 @@
 #include <vector>
 
 #include <alps/hdf5/archive.hpp>
-#include <alps/hdf5/vector.hpp>
 #include <alps/hdf5/multi_array.hpp>
+#include <alps/hdf5/vector.hpp>
+
+#include <svm/dataset.hpp>
+
+#include <svm/libsvm/svm.h>
+
+#include <svm/serialization/serializer.hpp>
+
+#include <svm/traits/label_traits.hpp>
 
 
 namespace svm {
+namespace serialization {
 
     struct hdf5_tag;
 
@@ -328,4 +331,6 @@ namespace svm {
         bool full;
     };
 
+}
+    using serialization::hdf5_tag;
 }

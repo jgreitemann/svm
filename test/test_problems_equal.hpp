@@ -18,8 +18,9 @@
 
 #pragma once
 
-#include "doctest.h"
-#include "svm-wrapper.hpp"
+#include "doctest/doctest.h"
+
+#include <svm/detail/basic_problem.hpp>
 
 
 using svm::detail::basic_problem;

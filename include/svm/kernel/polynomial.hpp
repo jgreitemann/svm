@@ -18,18 +18,23 @@
 
 #pragma once
 
-#include "problem.hpp"
-#include "parameters.hpp"
-#include "model.hpp"
-#include "svm.h"
-#include "combinatorics.hpp"
-
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <stdexcept>
 #include <tuple>
 #include <utility>
+
+#include <combinatorics/combinatorics.hpp>
+
+#include <svm/model.hpp>
+#include <svm/problem.hpp>
+#include <svm/parameters.hpp>
+
+#include <svm/detail/basic_parameters.hpp>
+#include <svm/detail/patch_through_problem.hpp>
+
+#include <svm/libsvm/svm.h>
 
 
 namespace svm {

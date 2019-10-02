@@ -18,14 +18,17 @@
 
 #pragma once
 
-#include "dataset.hpp"
-#include "problem.hpp"
-#include "parameters.hpp"
-#include "svm.h"
-
 #include <algorithm>
-#include <vector>
 #include <stdexcept>
+#include <vector>
+
+#include <svm/dataset.hpp>
+#include <svm/problem.hpp>
+#include <svm/parameters.hpp>
+
+#include <svm/detail/basic_parameters.hpp>
+
+#include <svm/libsvm/svm.h>
 
 
 namespace svm {
