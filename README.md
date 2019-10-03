@@ -3,12 +3,11 @@ Support Vector Machine Library Wrappers
 
 This project provides an alternative, modern C++ interface to
 the [libsvm library][1]. The original libsvm code is redistributed largely
-unmodified in the `libsvm` directory of this repository, as is permissible under
+unmodified as part of this repository, as is permissible under
 the terms of its BSD 3-clause license.
 
 For now, not all features of the upstream libsvm are supported; in particular
-multi-class classification and regression are _not_ supported for the time
-being.
+regression is _not_ supported for the time being.
 
 However, these wrappers allow for an easy access to the core features of libsvm,
 two-class classification and use of the kernel trick. In particular, features
@@ -23,15 +22,15 @@ include:
     `svm::kernel` namespace.
   * Users may define further "precomputed" kernels in libsvm. In that case,
     libsvm expects their users to provide the kernel evaluations for all pairs
-    of training samples rather than the actual training data. Our wrapper
+    of training samples rather than the actual training data. This wrapper
     handles this instead, making the use of precomputed kernels very accessible.
-    One only needs to provide struct which defines a type `input_container_type`
-    that is to be used for training samples as well as an overload of
-    `operator()` which calculates the kernel evaluation of two samples (of type
-    `input_container_type`). As an example, we provide a "precomputed" version
-    of the linear kernel in `kernel/linear_precomputed.hpp`. This is merely for
-    demonstration and testing; in applications, the built-in linear kernel
-    should be used instead.
+    One only needs to provide a struct which defines the type definition
+    `input_container_type` that is to be used for training samples as well as an
+    overload of `operator()` which calculates the kernel evaluation of two
+    samples (of type `input_container_type`). As an example, a "precomputed"
+    version of the linear kernel is provided in `kernel/linear_precomputed.hpp`.
+    This is merely for demonstration and testing; in applications, the built-in
+    linear kernel should be used instead.
   * `svm::parameters` represents the parameters of the SVM optimization and also
     the parameters of the built-in kernels (due to technical reasons). Thus, it
     requires the kernel type as a template parameter. Precomputed kernels should
@@ -50,11 +49,19 @@ include:
     provided as an _rvalue reference_ (i.e. as a temporary or by invoking
     `std::move`) and will be invalidated afterwards. This is because the
     resulting `svm::model` will take hold of the sample data in the problem, at
-    least for those samples which become "support vectors". The `svm::model`
-    provides an `operator()` which can be called with a test sample and returns
-    a pair consisting of the label (-1 or +1) and decision function value.
+    least for those samples which become "support vectors".
     Iterating over the model gives access to its support vectors and their
     respective coefficients.
+    The `svm::model` provides an `operator()` which can be called with a test
+    sample and returns a pair consisting of the label (-1 or +1) and
+      - _in case of binary classification_, the value of the decision function;
+      - or _in case of multiclassification_ between _M_ distinct labels, a
+        container of size _M(M-1)_, holding all decision function values for
+        each binary classification between any two labels.
+        Through `svm::model::classifiers()`, one may alternatively obtain
+        a container of _M(M-1)_ views on the `svm::model`, each behaving like a
+        binary classification model (i.e. its call operator returns a pair of
+        the predicted label and the decision function value).
   * _introspector_ classes are defined for use with the linear
     (`linear_introspector`) and polynomial kernels (`tensor_introspector`).
     These in particular calculate contractions of multinomials of support vector
@@ -64,7 +71,7 @@ include:
     that SVM has learned to separate the two classes as best as possible. The
     introspector concept is very general and may be used in different ways with
     custom kernels.
-  * The wrappers also define an interface for serialization (saving/loading) of
+  * The wrapper also define an interface for serialization (saving/loading) of
     the resulting model and problem. ASCII serialization uses the text file
     input / output provided by libsvm.
   * Alternatively, when used in conjunction with the [ALPSCore][3] library, you
@@ -72,8 +79,8 @@ include:
     file saves on disk space and I/O bandwidth by using a binary format and
     enabling on-the-fly gzip compression. ALPSCore is otherwise not a depenency
     of these wrappers of libsvm. When you want to use HDF5 serialization, you
-    need to include the additional header `<hdf5_serialization.hpp>` and link
-    against ALPSCore's `libalps-hdf5`.
+    need to include the additional header `<svm/serialization/hdf5.hpp>` and
+    link against ALPSCore's `libalps-hdf5`.
 
 
 Included Third-party Code
@@ -86,7 +93,7 @@ Included Third-party Code
 License
 -------
 
-Copyright © 2018  Jonas Greitemann
+Copyright © 2018–2019  Jonas Greitemann
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
