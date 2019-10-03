@@ -1,3 +1,5 @@
+include_directories(../include)
+
 add_executable(combinatorics combinatorics.cpp)
 add_test(combinatorics combinatorics)
 
