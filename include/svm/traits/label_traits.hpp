@@ -25,9 +25,13 @@
 
 namespace svm {
 
-    static const size_t DYNAMIC = std::numeric_limits<size_t>::max();
+    static constexpr size_t DYNAMIC = std::numeric_limits<size_t>::max();
 
     namespace traits {
+
+        template <typename...>
+        using void_t = void;
+
         template <class Label>
         struct is_convertible_label
             : std::integral_constant<bool,
@@ -35,10 +39,17 @@ namespace svm {
                                      && bool(std::is_convertible<double, Label>::value)
                                      > {};
 
+        template <class Label, class = void_t<>>
+        struct label_size : std::integral_constant<size_t, DYNAMIC> {};
+
+        template <class Label>
+        struct label_size<Label, void_t<decltype(Label::nr_labels)>>
+            : std::integral_constant<size_t, Label::nr_labels> {};
+
         template <class Label>
         struct label_traits {
             static const size_t label_dim = Label::label_dim;
-            static const size_t nr_labels = Label::nr_labels;
+            static const size_t nr_labels = label_size<Label>::value;
             static auto begin (Label const& l) {
                 return l.begin();
             }
