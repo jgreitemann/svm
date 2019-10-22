@@ -179,7 +179,7 @@ namespace svm {
             for (int i = start_index; begin != end; ++i, ++begin)
                 if (!skip_zeros || *begin != 0)
                     data_.push_back({ .index = i, .value = static_cast<double>(*begin) });
-            data_.push_back({ .index = -1 });
+            data_.push_back({ .index = -1, .value = {} });
         }
 
         std::vector<struct svm_node> data_;
