@@ -63,6 +63,9 @@ namespace svm {
                 params.probability = 0;
             }
 
+            double cache_size() const { return params.cache_size; }
+            double & cache_size() { return params.cache_size; }
+
             struct svm_parameter * svm_params_ptr () {
                 return &params;
             }
