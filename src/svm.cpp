@@ -75,7 +75,7 @@ static void print_string_stdout(const char *s)
 	fflush(stdout);
 }
 static void (*svm_print_string) (const char *) = &print_string_stdout;
-#if 1
+#if 0
 static void info(const char *fmt,...)
 {
 	char buf[BUFSIZ];
@@ -86,7 +86,7 @@ static void info(const char *fmt,...)
 	(*svm_print_string)(buf);
 }
 #else
-static void info(const char *fmt,...) {}
+static void info(const char *,...) {}
 #endif
 
 //
@@ -2182,16 +2182,15 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 			info("WARNING: training data in only one class. See README for details.\n");
 		
 		svm_node **x = Malloc(svm_node *,l);
-		int i;
-		for(i=0;i<l;i++)
+		for(int i=0;i<l;i++)
 			x[i] = prob->x[perm[i]];
 
 		// calculate weighted C
 
 		double *weighted_C = Malloc(double, nr_class);
-		for(i=0;i<nr_class;i++)
+		for(int i=0;i<nr_class;i++)
 			weighted_C[i] = param->C;
-		for(i=0;i<param->nr_weight;i++)
+		for(int i=0;i<param->nr_weight;i++)
 		{	
 			int j;
 			for(j=0;j<nr_class;j++)
@@ -2205,72 +2204,73 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 
 		// train k*(k-1)/2 models
 		
+		int const nr_trig = nr_class * (nr_class - 1) / 2;
 		bool *nonzero = Malloc(bool,l);
-		for(i=0;i<l;i++)
+		for(int i=0;i<l;i++)
 			nonzero[i] = false;
-		decision_function *f = Malloc(decision_function,nr_class*(nr_class-1)/2);
+		decision_function *f = Malloc(decision_function,nr_trig);
 
 		double *probA=NULL,*probB=NULL;
 		if (param->probability)
 		{
-			probA=Malloc(double,nr_class*(nr_class-1)/2);
-			probB=Malloc(double,nr_class*(nr_class-1)/2);
+			probA=Malloc(double,nr_trig);
+			probB=Malloc(double,nr_trig);
 		}
 
-		int p = 0;
-		for(i=0;i<nr_class;i++)
-			for(int j=i+1;j<nr_class;j++)
+#pragma omp parallel for schedule(guided)
+		for (int p = 0; p < nr_trig; ++p) {
+			int i = nr_class - 0.5 * (1 + sqrt(8 * (nr_trig - p) + 1));
+			int j = p - (2 * nr_class - i - 3) * i / 2 + 1;
+
+			svm_problem sub_prob;
+			int si = start[i], sj = start[j];
+			int ci = count[i], cj = count[j];
+			sub_prob.l = ci+cj;
+			sub_prob.x = Malloc(svm_node *,sub_prob.l);
+			sub_prob.y = Malloc(double,sub_prob.l);
+			int k;
+			for(k=0;k<ci;k++)
 			{
-				svm_problem sub_prob;
-				int si = start[i], sj = start[j];
-				int ci = count[i], cj = count[j];
-				sub_prob.l = ci+cj;
-				sub_prob.x = Malloc(svm_node *,sub_prob.l);
-				sub_prob.y = Malloc(double,sub_prob.l);
-				int k;
-				for(k=0;k<ci;k++)
-				{
-					sub_prob.x[k] = x[si+k];
-					sub_prob.y[k] = +1;
-				}
-				for(k=0;k<cj;k++)
-				{
-					sub_prob.x[ci+k] = x[sj+k];
-					sub_prob.y[ci+k] = -1;
-				}
-
-				if(param->probability)
-					svm_binary_svc_probability(&sub_prob,param,weighted_C[i],weighted_C[j],probA[p],probB[p]);
-
-				f[p] = svm_train_one(&sub_prob,param,weighted_C[i],weighted_C[j]);
-				for(k=0;k<ci;k++)
-					if(!nonzero[si+k] && fabs(f[p].alpha[k]) > 0)
-						nonzero[si+k] = true;
-				for(k=0;k<cj;k++)
-					if(!nonzero[sj+k] && fabs(f[p].alpha[ci+k]) > 0)
-						nonzero[sj+k] = true;
-				free(sub_prob.x);
-				free(sub_prob.y);
-				++p;
+				sub_prob.x[k] = x[si+k];
+				sub_prob.y[k] = +1;
 			}
+			for(k=0;k<cj;k++)
+			{
+				sub_prob.x[ci+k] = x[sj+k];
+				sub_prob.y[ci+k] = -1;
+			}
+
+			if(param->probability)
+				svm_binary_svc_probability(&sub_prob,param,weighted_C[i],weighted_C[j],probA[p],probB[p]);
+
+			f[p] = svm_train_one(&sub_prob,param,weighted_C[i],weighted_C[j]);
+			for(k=0;k<ci;k++)
+				if(!nonzero[si+k] && fabs(f[p].alpha[k]) > 0)
+					nonzero[si+k] = true;
+			for(k=0;k<cj;k++)
+				if(!nonzero[sj+k] && fabs(f[p].alpha[ci+k]) > 0)
+					nonzero[sj+k] = true;
+			free(sub_prob.x);
+			free(sub_prob.y);
+		}
 
 		// build output
 
 		model->nr_class = nr_class;
 		
 		model->label = Malloc(int,nr_class);
-		for(i=0;i<nr_class;i++)
+		for(int i=0;i<nr_class;i++)
 			model->label[i] = label[i];
 		
 		model->rho = Malloc(double,nr_class*(nr_class-1)/2);
-		for(i=0;i<nr_class*(nr_class-1)/2;i++)
+		for(int i=0;i<nr_class*(nr_class-1)/2;i++)
 			model->rho[i] = f[i].rho;
 
 		if(param->probability)
 		{
 			model->probA = Malloc(double,nr_class*(nr_class-1)/2);
 			model->probB = Malloc(double,nr_class*(nr_class-1)/2);
-			for(i=0;i<nr_class*(nr_class-1)/2;i++)
+			for(int i=0;i<nr_class*(nr_class-1)/2;i++)
 			{
 				model->probA[i] = probA[i];
 				model->probB[i] = probB[i];
@@ -2285,7 +2285,7 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 		int total_sv = 0;
 		int *nz_count = Malloc(int,nr_class);
 		model->nSV = Malloc(int,nr_class);
-		for(i=0;i<nr_class;i++)
+		for(int i=0;i<nr_class;i++)
 		{
 			int nSV = 0;
 			for(int j=0;j<count[i];j++)
@@ -2303,8 +2303,7 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 		model->l = total_sv;
 		model->SV = Malloc(svm_node *,total_sv);
 		model->sv_indices = Malloc(int,total_sv);
-		p = 0;
-		for(i=0;i<l;i++)
+		for(int i=0, p=0; i<l; i++)
 			if(nonzero[i])
 			{
 				model->SV[p] = x[i];
@@ -2313,37 +2312,34 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 
 		int *nz_start = Malloc(int,nr_class);
 		nz_start[0] = 0;
-		for(i=1;i<nr_class;i++)
+		for(int i=1; i<nr_class; i++)
 			nz_start[i] = nz_start[i-1]+nz_count[i-1];
 
 		model->sv_coef = Malloc(double *,nr_class-1);
-		for(i=0;i<nr_class-1;i++)
+		for(int i=0; i<nr_class-1; i++)
 			model->sv_coef[i] = Malloc(double,total_sv);
 
-		p = 0;
-		for(i=0;i<nr_class;i++)
-			for(int j=i+1;j<nr_class;j++)
-			{
-				// classifier (i,j): coefficients with
-				// i are in sv_coef[j-1][nz_start[i]...],
-				// j are in sv_coef[i][nz_start[j]...]
+#pragma omp parallel for schedule(guided)
+		for (int p = 0; p < nr_trig; ++p) {
+			int i = nr_class - 0.5 * (1 + sqrt(8 * (nr_trig - p) + 1));
+			int j = p - (2 * nr_class - i - 3) * i / 2 + 1;
 
-				int si = start[i];
-				int sj = start[j];
-				int ci = count[i];
-				int cj = count[j];
-				
-				int q = nz_start[i];
-				int k;
-				for(k=0;k<ci;k++)
-					if(nonzero[si+k])
-						model->sv_coef[j-1][q++] = f[p].alpha[k];
-				q = nz_start[j];
-				for(k=0;k<cj;k++)
-					if(nonzero[sj+k])
-						model->sv_coef[i][q++] = f[p].alpha[ci+k];
-				++p;
-			}
+			// classifier (i,j): coefficients with
+			// i are in sv_coef[j-1][nz_start[i]...],
+			// j are in sv_coef[i][nz_start[j]...]
+
+			int si = start[i];
+			int sj = start[j];
+			int ci = count[i];
+			int cj = count[j];
+			
+			for(int k=0, q=nz_start[i]; k<ci; k++)
+				if(nonzero[si+k])
+					model->sv_coef[j-1][q++] = f[p].alpha[k];
+			for(int k=0, q=nz_start[j]; k<cj; k++)
+				if(nonzero[sj+k])
+					model->sv_coef[i][q++] = f[p].alpha[ci+k];
+		}
 		
 		free(label);
 		free(probA);
@@ -2354,8 +2350,8 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 		free(x);
 		free(weighted_C);
 		free(nonzero);
-		for(i=0;i<nr_class*(nr_class-1)/2;i++)
-			free(f[i].alpha);
+		for(int p=0; p<nr_trig; p++)
+			free(f[p].alpha);
 		free(f);
 		free(nz_count);
 		free(nz_start);
